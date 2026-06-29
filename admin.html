@@ -137,6 +137,7 @@
     .badge-green  { background: var(--green-lt); color: var(--green); }
     .badge-red    { background: var(--red-lt);   color: var(--red);   }
     .badge-amber  { background: #FEF3E2;          color: #B45309;      }
+    .badge-blue   { background: #EEF2FF;          color: #3730A3;      }
 
     /* ── MACRO PREVIEW ─────────────────────────────────────────────────────── */
     .macro-preview { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -214,6 +215,16 @@
     }
     .rm-comp-btn:hover { background: #fbe0de; }
 
+    /* ── CATEGORY TOGGLE (dish modal) ─────────────────────────────────────── */
+    .category-toggle { display: flex; gap: 8px; }
+    .cat-toggle-btn {
+      flex: 1; padding: 9px 12px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      border: 1.5px solid var(--border); background: var(--bg); color: var(--muted);
+      cursor: pointer; transition: all 0.15s; text-align: center;
+    }
+    .cat-toggle-btn:hover { border-color: var(--green); color: var(--green); }
+    .cat-toggle-btn.active { border-color: var(--green); background: var(--green-lt); color: var(--green); }
+
     /* ── DAY CHECKBOXES ─────────────────────────────────────────────────────── */
     .day-checkboxes { display: flex; gap: 8px; flex-wrap: wrap; }
     .day-checkbox-label {
@@ -237,10 +248,10 @@
     }
     .disc-type-btn.active { border-color: var(--green); background: var(--green-lt); color: var(--green); }
 
-    /* ── CUSTOM PRICING ROWS ───────────────────────────────────────────────── */
+    /* ── CUSTOM PRICING ROWS (3-layer) ─────────────────────────────────────── */
     .custom-pricing-rows { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
     .custom-pricing-row {
-      display: grid; grid-template-columns: 1fr 100px 32px;
+      display: grid; grid-template-columns: 130px 1fr 90px 32px;
       gap: 8px; align-items: center;
     }
     .custom-pricing-row select,
@@ -394,7 +405,7 @@
     <div class="tab-panel" id="tab-customers">
       <div class="page-header">
         <div>
-          <div class="page-title">Customers & Discounts</div>
+          <div class="page-title">Customers &amp; Discounts</div>
           <div class="page-sub">Add notes, discount rates, and custom pricing to phone numbers</div>
         </div>
         <button class="btn btn-primary" onclick="openCustomerModal()">+ Add / Edit Customer</button>
@@ -426,7 +437,7 @@
 // CONFIG
 // ═══════════════════════════════════════════════════════════════════════════════
 const CONFIG = {
-  apiUrl:   'https://script.google.com/macros/s/AKfycbyme3hPkdK3QooAEp7npP3vGMHG908mzH6e-qfjJ_kE6kDF_obykgmsAe8rw1XCRitg/exec',   // ← paste your Apps Script Web App URL here
+  apiUrl:   'https://script.google.com/macros/s/AKfycbyme3hPkdK3QooAEp7npP3vGMHG908mzH6e-qfjJ_kE6kDF_obykgmsAe8rw1XCRitg/exec',
   symbol:   '$',
   currency: 'SGD',
 };
@@ -484,10 +495,8 @@ function calcMacrosFromComponents(comps) {
   return {calories:Math.round(cal),proteinG:Math.round(p),carbsG:Math.round(c),fatG:Math.round(f)};
 }
 
-// Legacy calcMacros for backward compat with table rendering
 function calcMacros(dish) {
-  const comps = getDishComponents(dish);
-  return calcMacrosFromComponents(comps);
+  return calcMacrosFromComponents(getDishComponents(dish));
 }
 
 function getDishComponents(dish) {
@@ -513,23 +522,27 @@ let menuData = [];
 let locData  = [];
 let custData = [];
 
-// Dish modal component editing state
-let editingComponents = [];
-
-// Customer modal custom pricing editing state
-let editingCustomPricing = []; // [{dishId, dishName, customPrice}]
+let editingComponents    = [];
+let editingCustomPricing = []; // [{dishCategory, dishId, dishName, customPrice}]
 let editingDiscountType  = 'pct';
+let editingDishCategory  = 'full_meal';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DEMO DATA
 // ═══════════════════════════════════════════════════════════════════════════════
 const DEMO_MENU = [
-  {id:'d1',name:'Teriyaki Chicken Bowl',price:14.50,description:'Tender glazed chicken over brown rice.',
+  {id:'d1',name:'Teriyaki Chicken Bowl',price:14.50,category:'full_meal',
+   description:'Tender glazed chicken over brown rice.',
    photoUrl:'',proteinType:'Chicken Breast',proteinGrams:150,carbType:'Brown Rice',carbGrams:150,
    fiberType:'Broccoli',fiberGrams:100,active:true,components:''},
-  {id:'d2',name:'Salmon & Quinoa',price:17.00,description:'Pan-seared salmon with quinoa and asparagus.',
+  {id:'d2',name:'Salmon & Quinoa',price:17.00,category:'full_meal',
+   description:'Pan-seared salmon with quinoa and asparagus.',
    photoUrl:'',proteinType:'Salmon',proteinGrams:130,carbType:'Quinoa',carbGrams:120,
    fiberType:'Asparagus',fiberGrams:100,active:true,components:''},
+  {id:'d3',name:'Pork Spare Ribs (200g)',price:12.00,category:'protein',
+   description:'Slow-braised pork spare ribs.',
+   photoUrl:'',proteinType:'Pork Spare Ribs',proteinGrams:200,carbType:'',carbGrams:0,
+   fiberType:'',fiberGrams:0,active:true,components:''},
 ];
 const DEMO_LOCS = [
   {id:'l1',name:'Tanjong Pagar',address:'1 Tanjong Pagar Plaza',availableDays:'3,4,5,6',active:true},
@@ -670,10 +683,16 @@ function renderMenuTable() {
     wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">No dishes yet. Add your first dish above.</div>';
     return;
   }
+
+  const catBadge = {
+    full_meal: '<span class="badge badge-green" style="font-size:11px">🍱 Full Meal</span>',
+    protein:   '<span class="badge badge-amber" style="font-size:11px">🥩 Protein</span>',
+  };
+
   wrap.innerHTML = `
     <table class="data-table">
       <thead><tr>
-        <th>Dish</th><th>Components</th>
+        <th>Dish</th><th>Category</th><th>Components</th>
         <th>Macros (est.)</th><th>Price</th><th>Status</th><th>Actions</th>
       </tr></thead>
       <tbody>
@@ -683,8 +702,10 @@ function renderMenuTable() {
           const comps = getDishComponents(d);
           const chipIcons = {protein:'🥩',carb:'🌾',fiber:'🥦'};
           const compStr = comps.map(c => `${chipIcons[c.category]||''} ${esc(c.type)} ${c.grams}g`).join(' · ');
+          const cat = d.category || 'full_meal';
           return `<tr>
             <td><strong>${esc(d.name)}</strong>${d.description?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(d.description.substring(0,60))}${d.description.length>60?'…':''}</div>`:''}</td>
+            <td>${catBadge[cat] || catBadge['full_meal']}</td>
             <td style="font-size:12px;color:var(--muted)">${compStr||'—'}</td>
             <td style="white-space:nowrap">
               <span style="font-weight:700">${m.calories} kcal</span>
@@ -739,27 +760,22 @@ function updateCompCategory(idx, cat) {
   editingComponents[idx].type = '';
   renderComponentRows();
 }
-
 function updateCompType(idx, type) {
   editingComponents[idx].type = type;
   updateMacroPreview();
 }
-
 function updateCompGrams(idx, val) {
   editingComponents[idx].grams = Number(val) || 0;
   updateMacroPreview();
 }
-
 function addComponent() {
   editingComponents.push({ category: 'protein', type: '', grams: 100 });
   renderComponentRows();
 }
-
 function removeComponent(idx) {
   editingComponents.splice(idx, 1);
   renderComponentRows();
 }
-
 function updateMacroPreview() {
   const m = calcMacrosFromComponents(editingComponents);
   const setEl = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
@@ -769,7 +785,13 @@ function updateMacroPreview() {
   setEl('prev-f',   m.fatG     ? m.fatG + 'g'     : '—');
 }
 
-// ── Description suggester ─────────────────────────────────────────────────────
+function setDishCategory(cat) {
+  editingDishCategory = cat;
+  ['full_meal','protein'].forEach(c => {
+    const btn = document.getElementById(`cat-btn-${c}`);
+    if (btn) btn.classList.toggle('active', c === cat);
+  });
+}
 
 function suggestDesc() {
   const comps = editingComponents.filter(c => c.type);
@@ -786,8 +808,8 @@ function suggestDesc() {
   const templates = [
     () => {
       const parts = [];
-      if (proteins.length) parts.push(`${andList(proteins)}`);
-      if (carbs.length)    parts.push(`${andList(carbs)}`);
+      if (proteins.length) parts.push(andList(proteins));
+      if (carbs.length)    parts.push(andList(carbs));
       if (fibers.length)   parts.push(`a side of ${andList(fibers)}`);
       return `Freshly prepped ${parts.join(', ')}.`;
     },
@@ -817,11 +839,11 @@ function suggestDesc() {
 }
 
 function openDishModal(dishId) {
-  const dish = dishId ? menuData.find(d => d.id === dishId) : null;
+  const dish = dishId ? menuData.find(d => String(d.id) === String(dishId)) : null;
   const isEdit = !!dish;
 
-  // Initialize editingComponents from dish or empty
-  editingComponents = dish ? getDishComponents(dish).map(c => ({...c})) : [];
+  editingComponents    = dish ? getDishComponents(dish).map(c => ({...c})) : [];
+  editingDishCategory  = dish?.category || 'full_meal';
 
   document.getElementById('modal-box').innerHTML = `
     <div class="modal-title">${isEdit ? 'Edit Dish' : 'Add New Dish'}</div>
@@ -836,6 +858,17 @@ function openDishModal(dishId) {
         <label class="form-label">Price (${CONFIG.currency}) *</label>
         <input class="form-control" id="d-price" type="number" step="0.50" value="${dish?.price||''}" placeholder="14.50">
       </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <div class="category-toggle">
+        <button class="cat-toggle-btn${editingDishCategory==='full_meal'?' active':''}" id="cat-btn-full_meal"
+                onclick="setDishCategory('full_meal')" type="button">🍱 Full Meal</button>
+        <button class="cat-toggle-btn${editingDishCategory==='protein'?' active':''}" id="cat-btn-protein"
+                onclick="setDishCategory('protein')" type="button">🥩 Protein</button>
+      </div>
+      <div class="form-hint">Full Meal = complete dish with carbs &amp; veg. Protein = standalone protein add-on.</div>
     </div>
 
     <div class="form-group">
@@ -887,8 +920,8 @@ function openDishModal(dishId) {
 }
 
 async function saveDish() {
-  const id   = document.getElementById('dish-id').value;
-  const name = document.getElementById('d-name').value.trim();
+  const id    = document.getElementById('dish-id').value.trim();
+  const name  = document.getElementById('d-name').value.trim();
   const price = Number(document.getElementById('d-price').value);
 
   if (!name)  { showToast('Dish name is required');  return; }
@@ -896,13 +929,13 @@ async function saveDish() {
 
   const m = calcMacrosFromComponents(editingComponents);
 
-  // Derive legacy flat fields from first of each category for backward compat
   const firstProtein = editingComponents.find(c => c.category === 'protein');
   const firstCarb    = editingComponents.find(c => c.category === 'carb');
   const firstFiber   = editingComponents.find(c => c.category === 'fiber');
 
   const dish = {
     id,
+    category:     editingDishCategory || 'full_meal',
     name,
     description:  document.getElementById('d-desc').value.trim(),
     price,
@@ -930,7 +963,7 @@ async function saveDish() {
   }
 
   if (id) {
-    const idx = menuData.findIndex(d => d.id === id);
+    const idx = menuData.findIndex(d => String(d.id) === String(id));
     if (idx !== -1) menuData[idx] = dish;
   } else {
     menuData.push(dish);
@@ -942,7 +975,7 @@ async function saveDish() {
 }
 
 async function toggleDishActive(id, active) {
-  const dish = menuData.find(d => d.id === id);
+  const dish = menuData.find(d => String(d.id) === String(id));
   if (!dish) return;
   dish.active = active;
   if (CONFIG.apiUrl) {
@@ -1143,7 +1176,6 @@ function renderLocationsTable() {
 
 function openLocationModal(locId) {
   const loc = locId ? locData.find(l => l.id === locId) : null;
-  // Parse existing availableDays into a set of day numbers
   const existingDays = new Set();
   if (loc?.availableDays) {
     const str = String(loc.availableDays);
@@ -1155,7 +1187,6 @@ function openLocationModal(locId) {
     }
   }
 
-  // Day labels: Mon=1 … Sun=0
   const dayLabels = [
     {n:1,lbl:'Mon'},{n:2,lbl:'Tue'},{n:3,lbl:'Wed'},
     {n:4,lbl:'Thu'},{n:5,lbl:'Fri'},{n:6,lbl:'Sat'},{n:0,lbl:'Sun'}
@@ -1204,7 +1235,6 @@ async function saveLocation() {
   const addr = document.getElementById('loc-addr').value.trim();
   if (!name) { showToast('Location name is required'); return; }
 
-  // Collect checked days
   const dayNums = [1,2,3,4,5,6,0];
   const checkedDays = dayNums.filter(n => {
     const chk = document.getElementById(`day-chk-${n}`);
@@ -1269,7 +1299,16 @@ function renderCustomersTable() {
     </table>`;
 }
 
-// ── Custom pricing row helpers ─────────────────────────────────────────────────
+// ── Custom pricing row helpers (3-layer) ──────────────────────────────────────
+
+/**
+ * Returns dishes filtered by category string.
+ * category = '' means all dishes; 'full_meal' or 'protein' filters accordingly.
+ */
+function getDishesByCategory(category) {
+  if (!category) return menuData;
+  return menuData.filter(d => (d.category || 'full_meal') === category);
+}
 
 function renderCustomPricingRows() {
   const container = document.getElementById('custom-pricing-rows');
@@ -1279,23 +1318,44 @@ function renderCustomPricingRows() {
     return;
   }
   container.innerHTML = editingCustomPricing.map((row, idx) => {
-    const dishOptions = menuData.map(d =>
-      `<option value="${esc(d.id)}"${d.id===row.dishId?' selected':''}>${esc(d.name)} — std $${Number(d.price).toFixed(2)}</option>`
-    ).join('');
+    const catOptions = [
+      `<option value=""${row.dishCategory===''?' selected':''}>All categories</option>`,
+      `<option value="full_meal"${row.dishCategory==='full_meal'?' selected':''}>🍱 Full Meal</option>`,
+      `<option value="protein"${row.dishCategory==='protein'?' selected':''}>🥩 Protein</option>`,
+    ].join('');
+
+    const filteredDishes = getDishesByCategory(row.dishCategory);
+    const dishOptions = [
+      `<option value=""${!row.dishId?' selected':''}>All items in category</option>`,
+      ...filteredDishes.map(d =>
+        `<option value="${esc(d.id)}"${d.id===row.dishId?' selected':''}>${esc(d.name)} — std $${Number(d.price).toFixed(2)}</option>`
+      )
+    ].join('');
+
     return `
       <div class="custom-pricing-row" id="cpr-${idx}">
+        <select class="form-control" onchange="updateCPRCategory(${idx},this.value)">
+          ${catOptions}
+        </select>
         <select class="form-control" onchange="updateCPRDish(${idx},this.value)">
-          <option value="">— select dish —</option>${dishOptions}
+          ${dishOptions}
         </select>
         <input class="form-control" type="number" step="0.50" min="0" value="${row.customPrice||''}"
-               placeholder="Price" oninput="updateCPRPrice(${idx},this.value)">
+               placeholder="$Price" oninput="updateCPRPrice(${idx},this.value)">
         <button class="rm-comp-btn" onclick="removeCPR(${idx})" title="Remove">✕</button>
       </div>`;
   }).join('');
 }
 
 function addCustomPricingRow() {
-  editingCustomPricing.push({ dishId: '', dishName: '', customPrice: '' });
+  editingCustomPricing.push({ dishCategory: '', dishId: '', dishName: '', customPrice: '' });
+  renderCustomPricingRows();
+}
+
+function updateCPRCategory(idx, cat) {
+  editingCustomPricing[idx].dishCategory = cat;
+  editingCustomPricing[idx].dishId       = '';
+  editingCustomPricing[idx].dishName     = '';
   renderCustomPricingRows();
 }
 
@@ -1325,17 +1385,17 @@ function setDiscountType(type) {
 async function openCustomerModal(phone) {
   const c = phone ? custData.find(x => x.phone === phone) : null;
 
-  editingDiscountType = c?.discountType || 'pct';
-
-  // Load custom pricing — from API or local demo
+  editingDiscountType  = c?.discountType || 'pct';
   editingCustomPricing = [];
+
   if (CONFIG.apiUrl && phone) {
     const cpData = await apiGet({ action: 'getCustomPricing', phone });
     if (Array.isArray(cpData)) {
       editingCustomPricing = cpData.map(r => ({
-        dishId: r.dishId,
-        dishName: r.dishName,
-        customPrice: r.customPrice,
+        dishCategory: r.dishCategory || '',
+        dishId:       r.dishId       || '',
+        dishName:     r.dishName     || '',
+        customPrice:  r.customPrice,
       }));
     }
   }
@@ -1371,12 +1431,21 @@ async function openCustomerModal(phone) {
     </div>
 
     <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px">Custom Dish Pricing</div>
         <button class="btn btn-sm btn-secondary" onclick="addCustomPricingRow()" type="button">+ Add</button>
       </div>
+      <div style="display:grid;grid-template-columns:130px 1fr 90px 32px;gap:8px;margin-bottom:6px">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px">Category</div>
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px">Dish</div>
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px">Price</div>
+        <div></div>
+      </div>
       <div class="custom-pricing-rows" id="custom-pricing-rows"></div>
-      <div class="form-hint" style="margin-top:8px">Custom prices override the menu price for this customer, before any discount is applied.</div>
+      <div class="form-hint" style="margin-top:8px">
+        Category blank = applies to all dishes. Dish blank = applies to all dishes in that category.
+        Exact dish match takes priority, then category, then wildcard.
+      </div>
     </div>
 
     <div class="modal-footer">
@@ -1404,10 +1473,14 @@ async function saveCustomer() {
 
     // Save custom pricing rows
     for (const row of editingCustomPricing) {
-      if (!row.dishId || !row.customPrice) continue;
+      if (row.customPrice === '' || row.customPrice === null || row.customPrice === undefined) continue;
       await apiPost({
         action: 'upsertCustomPricing', token,
-        phone, dishId: row.dishId, dishName: row.dishName, customPrice: Number(row.customPrice),
+        phone,
+        dishCategory: row.dishCategory || '',
+        dishId:       row.dishId       || '',
+        dishName:     row.dishName     || '',
+        customPrice:  Number(row.customPrice),
       });
     }
   }
