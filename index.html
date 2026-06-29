@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meal Prep Co.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ── RESET & TOKENS ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #F7F5F2;
+      --surface:   #FFFFFF;
+      --border:    #E6E1D9;
+      --text:      #1C1C1C;
+      --muted:     #7A7870;
+      --green:     #3D6B35;
+      --green-lt:  #EDF3EB;
+      --green-dk:  #2E5228;
+      --amber:     #C4854A;
+      --amber-lt:  #FDF3EB;
+      --red:       #C0392B;
+      --radius:    12px;
+      --shadow:    0 2px 12px rgba(0,0,0,0.07);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+
+    body { background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; width: 100%; }
+    button { font-family: inherit; cursor: pointer; border: none; }
+    input, select, textarea { font-family: inherit; }
+
+    /* ── LAYOUT ───────────────────────────────────────────────────────────── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── HEADER ───────────────────────────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    header .inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 24px; max-width: 1100px; margin: 0 auto;
+    }
+    .logo { font-size: 20px; font-weight: 700; color: var(--green); letter-spacing: -0.3px; }
+    .logo span { color: var(--text); font-weight: 400; }
+    .nav-order-btn {
+      background: var(--green); color: #fff;
+      padding: 10px 22px; border-radius: 8px;
+      font-size: 14px; font-weight: 600;
+      transition: background 0.15s;
+    }
+    .nav-order-btn:hover { background: var(--green-dk); }
+
+    /* ── HERO ─────────────────────────────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding: 72px 24px 56px;
+    }
+    .hero-tag {
+      display: inline-block;
+      background: var(--green-lt); color: var(--green);
+      padding: 6px 14px; border-radius: 100px;
+      font-size: 13px; font-weight: 600; letter-spacing: 0.3px;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: clamp(36px, 5vw, 58px); font-weight: 700;
+      line-height: 1.1; letter-spacing: -1px; margin-bottom: 16px;
+    }
+    .hero p {
+      font-size: 18px; color: var(--muted); max-width: 520px;
+      margin: 0 auto 36px; line-height: 1.6;
+    }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--green); color: #fff;
+      padding: 14px 32px; border-radius: 10px;
+      font-size: 16px; font-weight: 600;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .hero-cta:hover { background: var(--green-dk); transform: translateY(-1px); }
+    .hero-cta svg { flex-shrink: 0; }
+
+    /* ── SECTION HEADERS ──────────────────────────────────────────────────── */
+    .section-header { text-align: center; margin-bottom: 40px; }
+    .section-header h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .section-header p  { color: var(--muted); font-size: 16px; }
+
+    /* ── MENU GRID ────────────────────────────────────────────────────────── */
+    #menu-section { padding: 64px 0; }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .dish-card {
+      background: var(--surface); border-radius: var(--radius);
+      border: 1px solid var(--border); overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .dish-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+    .dish-card-img {
+      width: 100%; aspect-ratio: 16/9; object-fit: cover; background: var(--bg);
+    }
+    .dish-card-img-placeholder {
+      width: 100%; aspect-ratio: 16/9;
+      background: linear-gradient(135deg, #EDF3EB 0%, #D4E6C3 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .dish-card-body { padding: 20px; }
+    .dish-card-name { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .dish-card-desc { font-size: 14px; color: var(--muted); margin-bottom: 14px; line-height: 1.5; min-height: 40px; }
+    .dish-components {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;
+    }
+    .dish-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 100px;
+      font-size: 12px; font-weight: 500;
+    }
+    .chip-protein { background: #FEF3E2; color: #B45309; }
+    .chip-carb    { background: #EEF2FF; color: #3730A3; }
+    .chip-fiber   { background: #F0FDF4; color: #166534; }
+    .dish-macros {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 8px; padding: 12px; background: var(--bg);
+      border-radius: 8px; margin-bottom: 16px;
+    }
+    .macro-item { text-align: center; }
+    .macro-val  { font-size: 15px; font-weight: 700; color: var(--text); }
+    .macro-lbl  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .dish-card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .dish-price { font-size: 22px; font-weight: 700; color: var(--green); }
+    .dish-price span { font-size: 14px; font-weight: 400; color: var(--muted); }
+    .add-to-order-btn {
+      background: var(--green); color: #fff;
+      padding: 9px 18px; border-radius: 8px;
+      font-size: 14px; font-weight: 600;
+      transition: background 0.15s;
+    }
+    .add-to-order-btn:hover { background: var(--green-dk); }
+
+    /* ── ORDER PANEL ──────────────────────────────────────────────────────── */
+    #order-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4); z-index: 200;
+      backdrop-filter: blur(4px);
+    }
+    #order-overlay.open { display: flex; align-items: flex-end; justify-content: center; }
+    @media (min-width: 700px) {
+      #order-overlay.open { align-items: center; }
+    }
+    #order-panel {
+      background: var(--surface); width: 100%; max-width: 560px;
+      border-radius: 20px 20px 0 0; max-height: 92vh;
+      overflow-y: auto; padding: 32px 28px;
+      animation: slideUp 0.25s ease;
+    }
+    @media (min-width: 700px) {
+      #order-panel { border-radius: 20px; max-height: 88vh; }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(60px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    /* ── STEPS ────────────────────────────────────────────────────────────── */
+    .steps { display: flex; gap: 0; margin-bottom: 28px; }
+    .step-item {
+      flex: 1; text-align: center; position: relative;
+    }
+    .step-item::after {
+      content: ''; position: absolute; top: 16px; left: 50%; right: -50%;
+      height: 2px; background: var(--border); z-index: 0;
+    }
+    .step-item:last-child::after { display: none; }
+    .step-dot {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--border); color: var(--muted);
+      font-size: 13px; font-weight: 600;
+      display: inline-flex; align-items: center; justify-content: center;
+      position: relative; z-index: 1; margin-bottom: 6px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .step-item.active .step-dot { background: var(--green); color: #fff; }
+    .step-item.done   .step-dot { background: var(--green-lt); color: var(--green); }
+    .step-item.done::after { background: var(--green-lt); }
+    .step-item.active::after { background: var(--border); }
+    .step-lbl { font-size: 11px; color: var(--muted); font-weight: 500; }
+    .step-item.active .step-lbl { color: var(--green); font-weight: 600; }
+
+    /* ── FORM ─────────────────────────────────────────────────────────────── */
+    .panel-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .panel-sub   { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-label {
+      display: block; font-size: 13px; font-weight: 600;
+      color: var(--text); margin-bottom: 6px;
+    }
+    .form-label span { color: var(--red); margin-left: 2px; }
+    .form-control {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 15px; color: var(--text); background: var(--surface);
+      transition: border-color 0.15s;
+      outline: none;
+    }
+    .form-control:focus  { border-color: var(--green); }
+    .form-control.error { border-color: var(--red); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* ── CART ITEMS ───────────────────────────────────────────────────────── */
+    .cart-empty { text-align: center; padding: 32px; color: var(--muted); font-size: 15px; }
+    .cart-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .cart-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px; background: var(--bg); border-radius: 10px;
+    }
+    .cart-item-img {
+      width: 52px; height: 52px; border-radius: 8px; object-fit: cover;
+      background: var(--green-lt); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .cart-item-img img { width: 100%; height: 100%; object-fit: cover; }
+    .cart-item-info { flex: 1; min-width: 0; }
+    .cart-item-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .cart-item-price { font-size: 13px; color: var(--muted); }
+    .qty-control { display: flex; align-items: center; gap: 8px; }
+    .qty-btn {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      font-size: 16px; display: flex; align-items: center; justify-content: center;
+      transition: background 0.1s;
+    }
+    .qty-btn:hover { background: var(--bg); }
+    .qty-num { font-size: 15px; font-weight: 600; min-width: 20px; text-align: center; }
+    .cart-item-remove {
+      background: none; border: none; color: var(--muted);
+      font-size: 18px; padding: 4px; cursor: pointer; line-height: 1;
+    }
+    .cart-item-remove:hover { color: var(--red); }
+
+    /* ── CHECKOUT SUMMARY ─────────────────────────────────────────────────── */
+    .summary-box {
+      background: var(--bg); border-radius: 10px; padding: 16px;
+      margin-bottom: 20px;
+    }
+    .summary-row {
+      display: flex; justify-content: space-between;
+      font-size: 14px; padding: 5px 0;
+    }
+    .summary-row.total {
+      font-size: 18px; font-weight: 700; border-top: 1px solid var(--border);
+      padding-top: 12px; margin-top: 8px;
+    }
+    .summary-row.discount { color: var(--green); }
+    .summary-custom-price {
+      font-size: 11px; color: var(--amber); font-style: italic; margin-top: 1px;
+    }
+    .discount-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--green-lt); color: var(--green);
+      padding: 8px 12px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; margin-bottom: 16px; width: 100%;
+    }
+
+    .pickup-detail {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px; background: var(--bg); border-radius: 8px; margin-bottom: 8px;
+    }
+    .pickup-detail-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .pickup-detail-text { font-size: 14px; }
+    .pickup-detail-text strong { display: block; font-weight: 600; margin-bottom: 2px; }
+    .pickup-detail-text span { color: var(--muted); }
+
+    /* ── CONFIRMATION ─────────────────────────────────────────────────────── */
+    #confirm-step { text-align: center; padding: 16px 0; }
+    .confirm-icon { font-size: 64px; margin-bottom: 16px; }
+    .confirm-title { font-size: 26px; font-weight: 700; margin-bottom: 10px; }
+    .confirm-sub { font-size: 15px; color: var(--muted); line-height: 1.6; margin-bottom: 8px; }
+    .order-id-box {
+      background: var(--green-lt); color: var(--green);
+      padding: 12px 20px; border-radius: 8px; margin: 16px 0;
+      font-size: 16px; font-weight: 600;
+    }
+
+    /* ── BUTTONS ──────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 13px 24px; border-radius: 9px;
+      font-size: 15px; font-weight: 600;
+      transition: background 0.15s, opacity 0.15s;
+      width: 100%; border: none; cursor: pointer;
+    }
+    .btn-primary  { background: var(--green); color: #fff; }
+    .btn-primary:hover  { background: var(--green-dk); }
+    .btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
+    .btn-secondary:hover { background: var(--border); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-row { display: flex; gap: 10px; margin-top: 24px; }
+    .btn-row .btn { flex: 1; }
+
+    /* ── MINI CART BADGE ──────────────────────────────────────────────────── */
+    .cart-trigger {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 8px; padding: 8px 14px; cursor: pointer;
+      font-size: 14px; font-weight: 600; transition: border-color 0.15s;
+    }
+    .cart-trigger:hover { border-color: var(--green); }
+    .cart-badge {
+      background: var(--green); color: #fff;
+      border-radius: 100px; font-size: 12px; font-weight: 700;
+      min-width: 20px; height: 20px; padding: 0 6px;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+
+    /* ── CLOSE BUTTON ─────────────────────────────────────────────────────── */
+    .panel-close {
+      position: absolute; top: 20px; right: 20px;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--bg); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: var(--muted);
+    }
+    .panel-close:hover { background: var(--border); }
+    #order-panel { position: relative; }
+
+    /* ── LOCATION CARDS ───────────────────────────────────────────────────── */
+    .location-grid { display: flex; flex-direction: column; gap: 8px; }
+    .location-card {
+      padding: 12px 14px; border: 1.5px solid var(--border);
+      border-radius: 9px; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .location-card:hover { border-color: var(--green); }
+    .location-card.selected { border-color: var(--green); background: var(--green-lt); }
+    .location-card input[type=radio] { display: none; }
+    .location-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .location-addr { font-size: 12px; color: var(--muted); }
+    .location-days { font-size: 12px; color: var(--green); font-weight: 500; margin-top: 4px; }
+
+    /* ── DATE GRID ────────────────────────────────────────────────────────── */
+    .date-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .date-pill {
+      padding: 10px 8px; border: 1.5px solid var(--border);
+      border-radius: 8px; text-align: center; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      font-size: 13px;
+    }
+    .date-pill:hover { border-color: var(--green); }
+    .date-pill.selected { border-color: var(--green); background: var(--green-lt); }
+    .date-pill input[type=radio] { display: none; }
+    .date-day { font-weight: 700; font-size: 14px; }
+    .date-full { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+    /* ── TOAST ────────────────────────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #1C1C1C; color: #fff; padding: 12px 20px; border-radius: 10px;
+      font-size: 14px; font-weight: 500; opacity: 0; pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s; z-index: 999; white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── LOADING ──────────────────────────────────────────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg, #EEEBE6 25%, #F7F5F2 50%, #EEEBE6 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 8px;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .skeleton-card { height: 360px; }
+
+    /* ── EMPTY STATE ──────────────────────────────────────────────────────── */
+    .empty-state { text-align: center; padding: 64px 24px; }
+    .empty-state-icon { font-size: 56px; margin-bottom: 16px; }
+    .empty-state h3 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .empty-state p { color: var(--muted); font-size: 15px; }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────────────────────────── -->
+<header>
+  <div class="inner">
+    <div class="logo" id="business-name-header">Meal Prep Co.</div>
+    <div class="header-right">
+      <button class="cart-trigger" id="cart-trigger-btn" onclick="openOrderPanel()" style="display:none">
+        🛒 <span id="cart-count-label">0 items</span>
+        <span class="cart-badge" id="cart-badge">0</span>
+      </button>
+      <button class="nav-order-btn" onclick="scrollToMenu()">Order Now</button>
+    </div>
+  </div>
+</header>
+
+<!-- ── HERO ────────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-tag">🥗 Weekly Meal Prep</div>
+  <h1 id="hero-title">Clean. Fresh.<br>Ready to Go.</h1>
+  <p id="hero-sub">Macro-balanced meals prepped fresh each week. Pick your meals, choose a pickup day, and fuel your week right.</p>
+  <button class="hero-cta" onclick="scrollToMenu()">
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7"/></svg>
+    See This Week's Menu
+  </button>
+</section>
+
+<!-- ── MENU ────────────────────────────────────────────────────────────────── -->
+<section id="menu-section">
+  <div class="container">
+    <div class="section-header">
+      <h2>This Week's Menu</h2>
+      <p>You know what to do.</p>
+      <p>(I don't count macros - these were generated by Claude)</p>
+      <p>(Photos are for reference only. Or generated by Claude to replace your imagination. Pls don't be a Karen)</p>
+    </div>
+    <div class="menu-grid" id="menu-grid">
+      <!-- populated by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ── ORDER OVERLAY ───────────────────────────────────────────────────────── -->
+<div id="order-overlay" onclick="handleOverlayClick(event)">
+  <div id="order-panel">
+    <button class="panel-close" onclick="closeOrderPanel()">✕</button>
+
+    <!-- STEPS INDICATOR -->
+    <div class="steps" id="step-indicators">
+      <div class="step-item active" id="step-ind-1">
+        <div class="step-dot">1</div>
+        <div class="step-lbl">Details</div>
+      </div>
+      <div class="step-item" id="step-ind-2">
+        <div class="step-dot">2</div>
+        <div class="step-lbl">Pickup</div>
+      </div>
+      <div class="step-item" id="step-ind-3">
+        <div class="step-dot">3</div>
+        <div class="step-lbl">Checkout</div>
+      </div>
+    </div>
+
+    <!-- STEP 1: CUSTOMER DETAILS + CART -->
+    <div id="step-1">
+      <div class="panel-title">Your Order</div>
+      <div class="panel-sub">Review your items and enter your details.</div>
+
+      <div id="cart-list-container">
+        <div class="cart-empty" id="cart-empty-msg">No items yet. Add meals from the menu.</div>
+        <div class="cart-list" id="cart-list"></div>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Name <span>*</span></label>
+            <input class="form-control" type="text" id="inp-name" placeholder="Your full name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone <span>*</span></label>
+            <input class="form-control" type="tel" id="inp-phone" placeholder="+65 9123 4567">
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeOrderPanel()">Cancel</button>
+        <button class="btn btn-primary" onclick="goToStep2()" id="btn-step1-next">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: PICKUP DATE & LOCATION -->
+    <div id="step-2" style="display:none">
+      <div class="panel-title">Pickup Details</div>
+      <div class="panel-sub">Choose when and where to collect your order.</div>
+
+      <div class="form-group">
+        <label class="form-label">Pickup Date <span>*</span></label>
+        <div class="date-grid" id="date-grid"><!-- populated by JS --></div>
+      </div>
+
+      <div class="form-group" style="margin-top: 18px;">
+        <label class="form-label">Pickup Location <span>*</span></label>
+        <div class="location-grid" id="location-grid"><!-- populated by JS --></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+        <button class="btn btn-primary" onclick="goToStep3()">Review Order →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: CHECKOUT -->
+    <div id="step-3" style="display:none">
+      <div class="panel-title">Review & Confirm</div>
+      <div class="panel-sub">Double-check your order before placing.</div>
+
+      <div id="discount-badge-container"></div>
+
+      <div class="summary-box" id="checkout-summary"><!-- populated by JS --></div>
+
+      <div id="pickup-detail-boxes"><!-- populated by JS --></div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
+        <button class="btn btn-primary" onclick="submitOrder()" id="btn-confirm">Confirm Order</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: CONFIRMATION -->
+    <div id="step-4" style="display:none" id="confirm-step">
+      <div style="text-align:center; padding: 16px 0">
+        <div class="confirm-icon">🎉</div>
+        <div class="confirm-title">Order Confirmed!</div>
+        <div class="confirm-sub">Thanks, <strong id="confirm-name"></strong>! Your order has been placed.</div>
+        <div class="order-id-box">Order ID: <span id="confirm-order-id"></span></div>
+        <div class="confirm-sub">We'll have your meals ready for pickup on<br><strong id="confirm-pickup-date"></strong> at <strong id="confirm-pickup-loc"></strong>.</div>
+        <div style="margin-top: 28px;">
+          <button class="btn btn-primary" onclick="closeAndReset()" style="width:100%">Back to Menu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ────────────────────────────────────────────────────────────────── -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONFIG — update apiUrl after deploying your Google Apps Script
+// ═══════════════════════════════════════════════════════════════════════════════
+const CONFIG = {
+  apiUrl: 'https://script.google.com/macros/s/AKfycbyme3hPkdK3QooAEp7npP3vGMHG908mzH6e-qfjJ_kE6kDF_obykgmsAe8rw1XCRitg/exec',  // ← paste your Apps Script Web App URL here
+  businessName: '404 hunger not found',
+  tagline: 'Overflowing Pots & Overcrowded Pans',
+  currency: 'SGD',
+  symbol: '$',
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MACRO DATABASE (per 100g cooked/as-served)
+// ═══════════════════════════════════════════════════════════════════════════════
+const MACROS = {
+  protein: {
+    'Chicken Breast':     { cal: 165, p: 31, c: 0,  f: 3.6 },
+    'Salmon':             { cal: 208, p: 20, c: 0,  f: 13  },
+    'Tuna (Canned)':      { cal: 132, p: 28, c: 0,  f: 1   },
+    'Tofu (Firm)':        { cal: 76,  p: 8,  c: 2,  f: 4   },
+    'Eggs (Scrambled)':   { cal: 155, p: 13, c: 1,  f: 11  },
+    'Ground Beef (Lean)': { cal: 215, p: 26, c: 0,  f: 12  },
+    'Shrimp':             { cal: 99,  p: 24, c: 0,  f: 0.3 },
+    'Pork Tenderloin':    { cal: 143, p: 26, c: 0,  f: 4   },
+    'Turkey Breast':      { cal: 135, p: 30, c: 0,  f: 1   },
+    'Tempeh':             { cal: 193, p: 19, c: 9,  f: 11  },
+    'Pork Spare Ribs':    { cal: 280, p: 18, c: 0,  f: 22  },
+    'Pork Belly':         { cal: 518, p: 9,  c: 0,  f: 53  },
+  },
+  carb: {
+    'Brown Rice':           { cal: 111, p: 2.6, c: 23, f: 0.9 },
+    'Japanese White Rice':  { cal: 130, p: 2.7, c: 28, f: 0.3 },
+    'Thai Jasmine Rice':    { cal: 129, p: 2.7, c: 27, f: 0.3 },
+    'Basmati Rice':         { cal: 121, p: 2.7, c: 25, f: 0.4 },
+    'Quinoa':               { cal: 120, p: 4.4, c: 22, f: 1.9 },
+    'Sweet Potato':         { cal: 86,  p: 1.6, c: 20, f: 0.1 },
+    'Oats':                 { cal: 389, p: 17,  c: 66, f: 7   },
+    'Pasta (Whole Wheat)':  { cal: 124, p: 5.3, c: 27, f: 0.5 },
+    'Potato':               { cal: 77,  p: 2,   c: 17, f: 0.1 },
+    'Cauliflower Rice':     { cal: 25,  p: 1.9, c: 5,  f: 0.3 },
+  },
+  fiber: {
+    'Broccoli':           { cal: 34,  p: 2.8, c: 7,  f: 0.4 },
+    'Spinach':            { cal: 23,  p: 2.9, c: 3.6,f: 0.4 },
+    'Asparagus':          { cal: 20,  p: 2.2, c: 3.9,f: 0.1 },
+    'Green Beans':        { cal: 31,  p: 1.8, c: 7,  f: 0.1 },
+    'Mixed Greens':       { cal: 20,  p: 1.5, c: 3,  f: 0.3 },
+    'Cauliflower':        { cal: 25,  p: 1.9, c: 5,  f: 0.3 },
+    'Zucchini':           { cal: 17,  p: 1.2, c: 3.1,f: 0.3 },
+    'Kale':               { cal: 49,  p: 4.3, c: 9,  f: 0.9 },
+    'Bell Pepper':        { cal: 31,  p: 1,   c: 6,  f: 0.3 },
+    'Bok Choy':           { cal: 13,  p: 1.5, c: 2.2,f: 0.2 },
+  }
+};
+
+/**
+ * Returns components array for a dish.
+ * Parses dish.components JSON if present; falls back to flat fields.
+ */
+function getDishComponents(dish) {
+  if (dish.components && typeof dish.components === 'string' && dish.components.trim().startsWith('[')) {
+    try {
+      const parsed = JSON.parse(dish.components);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch (e) { /* fall through */ }
+  }
+  if (Array.isArray(dish.components) && dish.components.length > 0) {
+    return dish.components;
+  }
+  const comps = [];
+  if (dish.proteinType) comps.push({ category: 'protein', type: dish.proteinType, grams: Number(dish.proteinGrams) || 0 });
+  if (dish.carbType)    comps.push({ category: 'carb',    type: dish.carbType,    grams: Number(dish.carbGrams)    || 0 });
+  if (dish.fiberType)   comps.push({ category: 'fiber',   type: dish.fiberType,   grams: Number(dish.fiberGrams)   || 0 });
+  return comps;
+}
+
+function calcMacros(dish) {
+  const comps = getDishComponents(dish);
+  let cal = 0, p = 0, c = 0, f = 0;
+  comps.forEach(({ category, type, grams }) => {
+    const ref = MACROS[category]?.[type];
+    if (ref && grams > 0) {
+      const factor = grams / 100;
+      cal += ref.cal * factor;
+      p   += ref.p   * factor;
+      c   += ref.c   * factor;
+      f   += ref.f   * factor;
+    }
+  });
+  return {
+    calories: Math.round(cal),
+    proteinG: Math.round(p),
+    carbsG:   Math.round(c),
+    fatG:     Math.round(f),
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SVG PLACEHOLDER
+// ═══════════════════════════════════════════════════════════════════════════════
+function dishPlaceholderSVG() {
+  return `<svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+    <rect width="320" height="180" fill="#EDF3EB"/>
+    <!-- bowl shadow -->
+    <ellipse cx="160" cy="152" rx="72" ry="10" fill="#C4854A" opacity="0.18"/>
+    <!-- bowl body -->
+    <path d="M88 100 Q88 155 160 155 Q232 155 232 100 Z" fill="#F7F5F2" stroke="#C4854A" stroke-width="2.5"/>
+    <!-- bowl rim -->
+    <ellipse cx="160" cy="100" rx="72" ry="18" fill="#FFFFFF" stroke="#C4854A" stroke-width="2.5"/>
+    <!-- rice / grain base -->
+    <ellipse cx="160" cy="98" rx="58" ry="12" fill="#EDF3EB"/>
+    <!-- protein piece 1 -->
+    <rect x="130" y="80" width="34" height="20" rx="6" fill="#C4854A" opacity="0.85"/>
+    <!-- protein piece 2 -->
+    <rect x="158" y="76" width="28" height="16" rx="5" fill="#B8703C" opacity="0.75"/>
+    <!-- greens -->
+    <ellipse cx="120" cy="90" rx="14" ry="8" fill="#3D6B35" opacity="0.8"/>
+    <ellipse cx="112" cy="86" rx="10" ry="6" fill="#4A8040" opacity="0.7"/>
+    <!-- steam lines -->
+    <path d="M148 68 Q145 60 148 52" stroke="#C4854A" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <path d="M160 65 Q157 57 160 49" stroke="#C4854A" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <path d="M172 68 Q169 60 172 52" stroke="#C4854A" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+  </svg>`;
+}
+
+function dishPlaceholder() {
+  return `<div class="dish-card-img-placeholder">${dishPlaceholderSVG()}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DEMO DATA — shown when apiUrl is not set
+// ═══════════════════════════════════════════════════════════════════════════════
+const DEMO_MENU = [
+  {
+    id: 'demo-1', name: 'Teriyaki Chicken Bowl', price: 14.50,
+    description: 'Tender glazed chicken thigh over fluffy brown rice, with a side of steamed broccoli.',
+    photoUrl: '', proteinType: 'Chicken Breast', proteinGrams: 150,
+    carbType: 'Brown Rice', carbGrams: 150, fiberType: 'Broccoli', fiberGrams: 100,
+    active: true,
+  },
+  {
+    id: 'demo-2', name: 'Salmon & Quinoa', price: 17.00,
+    description: 'Pan-seared Atlantic salmon with quinoa and crisp asparagus spears.',
+    photoUrl: '', proteinType: 'Salmon', proteinGrams: 130,
+    carbType: 'Quinoa', carbGrams: 120, fiberType: 'Asparagus', fiberGrams: 100,
+    active: true,
+  },
+  {
+    id: 'demo-3', name: 'Lean Beef & Sweet Potato', price: 15.50,
+    description: 'Seasoned lean ground beef with roasted sweet potato and fresh spinach.',
+    photoUrl: '', proteinType: 'Ground Beef (Lean)', proteinGrams: 140,
+    carbType: 'Sweet Potato', carbGrams: 160, fiberType: 'Spinach', fiberGrams: 80,
+    active: true,
+  },
+];
+
+const DEMO_LOCATIONS = [
+  { id: 'loc-1', name: 'Tanjong Pagar',  address: '1 Tanjong Pagar Plaza, Singapore 082001', availableDays: '3,4,5,6', active: true },
+  { id: 'loc-2', name: 'Tiong Bahru',    address: '302 Tiong Bahru Rd, Singapore 168732',     availableDays: '4,5,6',   active: true },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════════
+let state = {
+  menu:          [],
+  locations:     [],
+  cart:          [],   // [{ dish, quantity }]
+  customer:      { name: '', phone: '' },
+  pickup:        { date: '', location: null },
+  discount:      null,
+  customPricing: [],   // [{ phone, dishId, dishName, customPrice }]
+  currentStep:   1,
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════════════════════════════════════════
+async function apiGet(params) {
+  if (!CONFIG.apiUrl) return null;
+  const url = CONFIG.apiUrl + '?' + new URLSearchParams(params);
+  const res = await fetch(url);
+  return res.json();
+}
+
+async function apiPost(body) {
+  if (!CONFIG.apiUrl) return null;
+  const res = await fetch(CONFIG.apiUrl, {
+    method: 'POST', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  document.title = CONFIG.businessName;
+  document.getElementById('business-name-header').textContent = CONFIG.businessName;
+  document.getElementById('hero-title').innerHTML =
+    CONFIG.tagline.replace('. ', '.<br>');
+
+  renderMenuSkeleton();
+
+  if (CONFIG.apiUrl) {
+    const [menuData, locData] = await Promise.all([
+      apiGet({ action: 'getMenu' }),
+      apiGet({ action: 'getLocations' }),
+    ]);
+    state.menu      = menuData  || DEMO_MENU;
+    state.locations = locData   || DEMO_LOCATIONS;
+  } else {
+    // Demo mode: add slight delay to simulate load
+    await new Promise(r => setTimeout(r, 600));
+    state.menu      = DEMO_MENU;
+    state.locations = DEMO_LOCATIONS;
+  }
+
+  renderMenu();
+  renderPickupDates();
+  // Initial location render (all locations) — will filter once a date is selected
+  renderLocations(state.locations);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MENU RENDERING
+// ═══════════════════════════════════════════════════════════════════════════════
+function renderMenuSkeleton() {
+  const grid = document.getElementById('menu-grid');
+  grid.innerHTML = [1,2,3].map(() =>
+    `<div class="dish-card skeleton skeleton-card"></div>`
+  ).join('');
+}
+
+function renderMenu() {
+  const grid = document.getElementById('menu-grid');
+  if (!state.menu.length) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-state-icon">🥘</div>
+        <h3>Menu coming soon</h3>
+        <p>Check back shortly for this week's offerings.</p>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = state.menu.map(dish => {
+    const m = calcMacros(dish);
+    const imgHtml = dish.photoUrl
+      ? `<img class="dish-card-img" src="${esc(dish.photoUrl)}" alt="${esc(dish.name)}" onerror="this.parentElement.innerHTML=dishPlaceholder()">`
+      : dishPlaceholder();
+
+    // Build component chips from getDishComponents
+    const comps = getDishComponents(dish);
+    const chipIcons = { protein: '🥩', carb: '🌾', fiber: '🥦' };
+    const chipClasses = { protein: 'chip-protein', carb: 'chip-carb', fiber: 'chip-fiber' };
+    const chipsHtml = comps.map(c =>
+      `<span class="dish-chip ${chipClasses[c.category] || ''}">${chipIcons[c.category] || ''} ${esc(c.type)}</span>`
+    ).join('');
+
+    return `
+      <div class="dish-card">
+        ${imgHtml}
+        <div class="dish-card-body">
+          <div class="dish-card-name">${esc(dish.name)}</div>
+          <div class="dish-card-desc">${esc(dish.description || '')}</div>
+          <div class="dish-components">${chipsHtml}</div>
+          <div class="dish-macros">
+            <div class="macro-item"><div class="macro-val">${m.calories}</div><div class="macro-lbl">kcal</div></div>
+            <div class="macro-item"><div class="macro-val">${m.proteinG}g</div><div class="macro-lbl">protein</div></div>
+            <div class="macro-item"><div class="macro-val">${m.carbsG}g</div><div class="macro-lbl">carbs</div></div>
+            <div class="macro-item"><div class="macro-val">${m.fatG}g</div><div class="macro-lbl">fat</div></div>
+          </div>
+          <div class="dish-card-footer">
+            <div class="dish-price">${CONFIG.symbol}${Number(dish.price).toFixed(2)} <span>/ meal</span></div>
+            <button class="add-to-order-btn" onclick="addToCart('${dish.id}')">+ Add</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CART
+// ═══════════════════════════════════════════════════════════════════════════════
+function addToCart(dishId) {
+  const dish = state.menu.find(d => d.id === dishId);
+  if (!dish) return;
+  const existing = state.cart.find(i => i.dish.id === dishId);
+  if (existing) {
+    existing.quantity++;
+  } else {
+    state.cart.push({ dish, quantity: 1 });
+  }
+  updateCartBadge();
+  renderCartList();
+  openOrderPanel();
+  showToast(`${dish.name} added to cart`);
+}
+
+function updateCartQty(dishId, delta) {
+  const item = state.cart.find(i => i.dish.id === dishId);
+  if (!item) return;
+  item.quantity += delta;
+  if (item.quantity <= 0) {
+    state.cart = state.cart.filter(i => i.dish.id !== dishId);
+  }
+  updateCartBadge();
+  renderCartList();
+}
+
+function updateCartBadge() {
+  const total = state.cart.reduce((s, i) => s + i.quantity, 0);
+  document.getElementById('cart-badge').textContent = total;
+  document.getElementById('cart-count-label').textContent =
+    total === 1 ? '1 item' : `${total} items`;
+  document.getElementById('cart-trigger-btn').style.display = total > 0 ? 'flex' : 'none';
+}
+
+function renderCartList() {
+  const container = document.getElementById('cart-list');
+  const emptyMsg  = document.getElementById('cart-empty-msg');
+  if (!state.cart.length) {
+    emptyMsg.style.display = 'block';
+    container.innerHTML = '';
+    return;
+  }
+  emptyMsg.style.display = 'none';
+  container.innerHTML = state.cart.map(({ dish, quantity }) => {
+    const imgHtml = dish.photoUrl
+      ? `<img src="${esc(dish.photoUrl)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='${dishPlaceholderSVG().replace(/'/g, "\\'")}'">`
+      : dishPlaceholderSVG();
+    return `
+      <div class="cart-item">
+        <div class="cart-item-img">${imgHtml}</div>
+        <div class="cart-item-info">
+          <div class="cart-item-name">${esc(dish.name)}</div>
+          <div class="cart-item-price">${CONFIG.symbol}${(dish.price * quantity).toFixed(2)}</div>
+        </div>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="updateCartQty('${dish.id}', -1)">−</button>
+          <span class="qty-num">${quantity}</span>
+          <button class="qty-btn" onclick="updateCartQty('${dish.id}', 1)">+</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PICKUP DATES — derived from location availableDays
+// ═══════════════════════════════════════════════════════════════════════════════
+function getAllowedDayNumbers() {
+  // Parse availableDays from all active locations (comma-separated day numbers, 0=Sun)
+  const daySet = new Set();
+  state.locations.forEach(loc => {
+    if (!loc.availableDays) return;
+    const str = String(loc.availableDays);
+    // If the value looks like day numbers (e.g. "3,4,5,6")
+    if (/^[\d,\s]+$/.test(str)) {
+      str.split(',').forEach(d => {
+        const n = parseInt(d.trim(), 10);
+        if (!isNaN(n) && n >= 0 && n <= 6) daySet.add(n);
+      });
+    } else {
+      // Legacy text format — fall back to Wed-Sat (3,4,5,6)
+      daySet.add(3); daySet.add(4); daySet.add(5); daySet.add(6);
+    }
+  });
+  return daySet.size > 0 ? daySet : new Set([3, 4, 5, 6]);
+}
+
+function renderPickupDates() {
+  const grid = document.getElementById('date-grid');
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const allowed = getAllowedDayNumbers();
+  const dates = [];
+  const today = new Date();
+  for (let i = 1; i <= 21 && dates.length < 4; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    if (allowed.has(d.getDay())) {
+      dates.push(d);
+    }
+  }
+  grid.innerHTML = dates.map(d => {
+    const iso = d.toISOString().split('T')[0];
+    return `
+      <label class="date-pill" onclick="selectDate('${iso}', this)" id="date-${iso}">
+        <input type="radio" name="pickup-date" value="${iso}">
+        <div class="date-day">${days[d.getDay()]}</div>
+        <div class="date-full">${d.getDate()} ${months[d.getMonth()]}</div>
+      </label>`;
+  }).join('');
+}
+
+function selectDate(iso, el) {
+  document.querySelectorAll('.date-pill').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  state.pickup.date = iso;
+  state.pickup.location = null; // reset location when date changes
+  filterLocationsByDate(iso);
+}
+
+function filterLocationsByDate(iso) {
+  if (!iso) {
+    renderLocations(state.locations);
+    return;
+  }
+  const dateObj = new Date(iso + 'T00:00:00');
+  const dayNum = dateObj.getDay(); // 0=Sun … 6=Sat
+  const filtered = state.locations.filter(loc => {
+    if (!loc.availableDays) return true;
+    const str = String(loc.availableDays);
+    if (/^[\d,\s]+$/.test(str)) {
+      return str.split(',').map(d => parseInt(d.trim(), 10)).includes(dayNum);
+    }
+    return true; // legacy text format — show all
+  });
+  renderLocations(filtered);
+}
+
+function renderLocations(locs) {
+  const grid = document.getElementById('location-grid');
+  if (!locs || !locs.length) {
+    grid.innerHTML = '<p style="color:var(--muted);font-size:14px">No locations available for this date.</p>';
+    return;
+  }
+  // Build human-readable day label for display
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const formatDays = (avail) => {
+    if (!avail) return '';
+    const str = String(avail);
+    if (/^[\d,\s]+$/.test(str)) {
+      const nums = str.split(',').map(d => parseInt(d.trim(), 10)).filter(n => !isNaN(n));
+      return nums.map(n => dayNames[n] || '').filter(Boolean).join(', ');
+    }
+    return str; // already text
+  };
+  grid.innerHTML = locs.map(loc => `
+    <label class="location-card" onclick="selectLocation('${loc.id}', this)">
+      <input type="radio" name="pickup-location" value="${loc.id}">
+      <div class="location-name">📍 ${esc(loc.name)}</div>
+      <div class="location-addr">${esc(loc.address || '')}</div>
+      <div class="location-days">Available: ${esc(formatDays(loc.availableDays))}</div>
+    </label>`).join('');
+}
+
+function selectLocation(id, el) {
+  document.querySelectorAll('.location-card').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  state.pickup.location = state.locations.find(l => l.id === id);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ORDER PANEL
+// ═══════════════════════════════════════════════════════════════════════════════
+function openOrderPanel() {
+  document.getElementById('order-overlay').classList.add('open');
+  renderCartList();
+  document.body.style.overflow = 'hidden';
+}
+
+function closeOrderPanel() {
+  document.getElementById('order-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('order-overlay')) closeOrderPanel();
+}
+
+function scrollToMenu() {
+  document.getElementById('menu-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function goToStep(n) {
+  [1,2,3,4].forEach(i => {
+    document.getElementById(`step-${i}`).style.display = i === n ? 'block' : 'none';
+  });
+  state.currentStep = n;
+  updateStepIndicators(n);
+  document.getElementById('order-panel').scrollTop = 0;
+}
+
+function updateStepIndicators(active) {
+  [1,2,3].forEach(i => {
+    const el = document.getElementById(`step-ind-${i}`);
+    if (!el) return;
+    el.className = 'step-item';
+    if (i < active)  el.classList.add('done');
+    if (i === active) el.classList.add('active');
+  });
+  // Hide steps on confirm
+  document.getElementById('step-indicators').style.display = active === 4 ? 'none' : 'flex';
+}
+
+function goToStep2() {
+  if (!state.cart.length)               { showToast('Add at least one meal first'); return; }
+  const name  = document.getElementById('inp-name').value.trim();
+  const phone = document.getElementById('inp-phone').value.trim();
+  if (!name)  { document.getElementById('inp-name').classList.add('error');  showToast('Please enter your name');         return; }
+  if (!phone) { document.getElementById('inp-phone').classList.add('error'); showToast('Please enter your phone number'); return; }
+  document.getElementById('inp-name').classList.remove('error');
+  document.getElementById('inp-phone').classList.remove('error');
+  state.customer = { name, phone };
+  goToStep(2);
+}
+
+async function goToStep3() {
+  if (!state.pickup.date)     { showToast('Please select a pickup date');     return; }
+  if (!state.pickup.location) { showToast('Please select a pickup location'); return; }
+
+  // Check discount
+  state.discount = null;
+  state.customPricing = [];
+
+  if (CONFIG.apiUrl) {
+    const [discountRes, pricingRes] = await Promise.all([
+      apiGet({ action: 'checkDiscount', phone: state.customer.phone }),
+      apiGet({ action: 'getCustomPricing', phone: state.customer.phone }),
+    ]);
+    if (discountRes?.discount && discountRes.discount.discountValue > 0) {
+      state.discount = discountRes.discount;
+    }
+    if (Array.isArray(pricingRes)) {
+      state.customPricing = pricingRes;
+    }
+  }
+
+  renderCheckout();
+  goToStep(3);
+}
+
+function getEffectivePrice(dish) {
+  // Check if there's a custom price for this dish for the current customer
+  const cp = state.customPricing.find(p => p.dishId === dish.id);
+  return cp ? Number(cp.customPrice) : Number(dish.price);
+}
+
+function renderCheckout() {
+  // Calculate subtotal using custom pricing where applicable
+  let subtotal = 0;
+  state.cart.forEach(({ dish, quantity }) => {
+    subtotal += getEffectivePrice(dish) * quantity;
+  });
+
+  const discount = state.discount;
+  let discountAmt = 0;
+  if (discount && discount.discountValue > 0) {
+    if (discount.discountType === 'fixed') {
+      discountAmt = Math.min(Number(discount.discountValue), subtotal);
+    } else {
+      // pct (default)
+      discountAmt = subtotal * Number(discount.discountValue) / 100;
+    }
+  }
+  const total = subtotal - discountAmt;
+
+  // Discount badge
+  const badgeContainer = document.getElementById('discount-badge-container');
+  if (discount && discount.discountValue > 0) {
+    const label = discount.discountType === 'fixed'
+      ? `${CONFIG.symbol}${Number(discount.discountValue).toFixed(2)} off`
+      : `${discount.discountValue}% off`;
+    badgeContainer.innerHTML = `
+      <div class="discount-badge">
+        🎁 ${esc(discount.notes || label + ' applied')}
+        <span style="margin-left:auto;font-weight:700">−${CONFIG.symbol}${discountAmt.toFixed(2)}</span>
+      </div>`;
+  } else {
+    badgeContainer.innerHTML = '';
+  }
+
+  // Summary rows
+  const summaryRows = state.cart.map(({ dish, quantity }) => {
+    const effectivePrice = getEffectivePrice(dish);
+    const hasCustom = effectivePrice !== Number(dish.price);
+    return `
+      <div class="summary-row">
+        <span>${esc(dish.name)} × ${quantity}${hasCustom ? '<span class="summary-custom-price"> (custom price)</span>' : ''}</span>
+        <span>${CONFIG.symbol}${(effectivePrice * quantity).toFixed(2)}</span>
+      </div>`;
+  }).join('');
+
+  let discountRowHtml = '';
+  if (discount && discount.discountValue > 0) {
+    const label = discount.discountType === 'fixed'
+      ? `Discount (${CONFIG.symbol}${Number(discount.discountValue).toFixed(2)} off)`
+      : `Discount (${discount.discountValue}%)`;
+    discountRowHtml = `<div class="summary-row discount"><span>${label}</span><span>−${CONFIG.symbol}${discountAmt.toFixed(2)}</span></div>`;
+  }
+
+  document.getElementById('checkout-summary').innerHTML = `
+    ${summaryRows}
+    ${discountRowHtml}
+    <div class="summary-row total"><span>Total</span><span>${CONFIG.symbol}${total.toFixed(2)}</span></div>`;
+
+  // Pickup details
+  const fmtDate = iso => {
+    const [y,m,d] = iso.split('-');
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const dt = new Date(y, m-1, d);
+    return `${days[dt.getDay()]}, ${d} ${months[dt.getMonth()]} ${y}`;
+  };
+  document.getElementById('pickup-detail-boxes').innerHTML = `
+    <div class="pickup-detail">
+      <div class="pickup-detail-icon">📅</div>
+      <div class="pickup-detail-text">
+        <strong>Pickup Date</strong>
+        <span>${fmtDate(state.pickup.date)}</span>
+      </div>
+    </div>
+    <div class="pickup-detail">
+      <div class="pickup-detail-icon">📍</div>
+      <div class="pickup-detail-text">
+        <strong>${esc(state.pickup.location.name)}</strong>
+        <span>${esc(state.pickup.location.address || '')}</span>
+      </div>
+    </div>
+    <div class="pickup-detail">
+      <div class="pickup-detail-icon">👤</div>
+      <div class="pickup-detail-text">
+        <strong>${esc(state.customer.name)}</strong>
+        <span>${esc(state.customer.phone)}</span>
+      </div>
+    </div>`;
+}
+
+async function submitOrder() {
+  const btn = document.getElementById('btn-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Placing order…';
+
+  let subtotal = 0;
+  state.cart.forEach(({ dish, quantity }) => {
+    subtotal += getEffectivePrice(dish) * quantity;
+  });
+
+  const discount = state.discount;
+  let discountAmt = 0;
+  if (discount && discount.discountValue > 0) {
+    if (discount.discountType === 'fixed') {
+      discountAmt = Math.min(Number(discount.discountValue), subtotal);
+    } else {
+      discountAmt = subtotal * Number(discount.discountValue) / 100;
+    }
+  }
+  const total = subtotal - discountAmt;
+
+  const orderPayload = {
+    name:           state.customer.name,
+    phone:          state.customer.phone,
+    pickupDate:     state.pickup.date,
+    pickupLocation: state.pickup.location.name,
+    items:          state.cart.map(i => ({
+      dishId:     i.dish.id,
+      dishName:   i.dish.name,
+      quantity:   i.quantity,
+      unitPrice:  getEffectivePrice(i.dish),
+    })),
+    subtotal,
+    discountType:  discount?.discountType  || 'pct',
+    discountValue: discount?.discountValue || 0,
+    discountAmt,
+    total,
+  };
+
+  let orderId = 'DEMO-' + Math.random().toString(36).substring(2,8).toUpperCase();
+
+  if (CONFIG.apiUrl) {
+    const res = await apiPost({ action: 'submitOrder', order: orderPayload });
+    if (res?.error) {
+      showToast('Error placing order: ' + res.error);
+      btn.disabled = false;
+      btn.textContent = 'Confirm Order';
+      return;
+    }
+    orderId = res?.orderId || orderId;
+  }
+
+  // Show confirmation
+  document.getElementById('confirm-name').textContent = state.customer.name;
+  document.getElementById('confirm-order-id').textContent = orderId;
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const [y,m,d] = state.pickup.date.split('-');
+  document.getElementById('confirm-pickup-date').textContent = `${d} ${months[m-1]} ${y}`;
+  document.getElementById('confirm-pickup-loc').textContent  = state.pickup.location.name;
+
+  goToStep(4);
+}
+
+function closeAndReset() {
+  state.cart          = [];
+  state.discount      = null;
+  state.customPricing = [];
+  state.pickup        = { date: '', location: null };
+  updateCartBadge();
+  closeOrderPanel();
+  goToStep(1);
+  // Reset form
+  document.getElementById('inp-name').value  = '';
+  document.getElementById('inp-phone').value = '';
+  document.querySelectorAll('.date-pill, .location-card').forEach(e => e.classList.remove('selected'));
+  // Re-render locations without date filter
+  renderLocations(state.locations);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════════════════════
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
