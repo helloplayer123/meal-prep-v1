@@ -764,16 +764,26 @@ let state = {
 // ═══════════════════════════════════════════════════════════════════════════════
 // API
 // ═══════════════════════════════════════════════════════════════════════════════
+async function fetchWithTimeout(url, options = {}, ms = 20000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...options, signal: ctrl.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 async function apiGet(params) {
   if (!CONFIG.apiUrl) return null;
   const url = CONFIG.apiUrl + '?' + new URLSearchParams(params);
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url);
   return res.json();
 }
 
 async function apiPost(body) {
   if (!CONFIG.apiUrl) return null;
-  const res = await fetch(CONFIG.apiUrl, {
+  const res = await fetchWithTimeout(CONFIG.apiUrl, {
     method: 'POST', redirect: 'follow',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(body),
@@ -1352,7 +1362,16 @@ async function submitOrder() {
     let orderId = 'DEMO-' + Math.random().toString(36).substring(2,8).toUpperCase();
 
     if (CONFIG.apiUrl) {
-      const res = await apiPost({ action: 'submitOrder', order: orderPayload });
+      let res;
+      try {
+        res = await apiPost({ action: 'submitOrder', order: orderPayload });
+      } catch (fetchErr) {
+        const msg = fetchErr.name === 'AbortError'
+          ? 'Request timed out — please check your connection and try again.'
+          : 'Could not reach server — check your internet connection.';
+        showToast(msg);
+        return; // finally will re-enable
+      }
       if (res?.error) {
         showToast('Error placing order: ' + res.error);
         return; // finally will re-enable
