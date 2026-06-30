@@ -933,6 +933,10 @@ async function saveDish() {
   const firstCarb    = editingComponents.find(c => c.category === 'carb');
   const firstFiber   = editingComponents.find(c => c.category === 'fiber');
 
+  // Preserve the existing active status when editing; default true for new dishes
+  const existingDish = id ? menuData.find(d => String(d.id) === String(id)) : null;
+  const activeStatus = existingDish ? existingDish.active : true;
+
   const dish = {
     id,
     category:     editingDishCategory || 'full_meal',
@@ -951,7 +955,7 @@ async function saveDish() {
     carbsG:       m.carbsG,
     fatG:         m.fatG,
     components:   editingComponents.filter(c => c.type),
-    active: true,
+    active:       activeStatus,
   };
 
   if (CONFIG.apiUrl) {

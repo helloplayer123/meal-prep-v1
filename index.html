@@ -376,17 +376,20 @@
       background: var(--surface);
       transition: background 0.15s;
       user-select: none;
+      gap: 8px;
     }
     .week-day-header:hover { background: var(--green-lt); }
     .week-day-row.expanded > .week-day-header { background: var(--green-lt); }
     .week-day-label {
-      display: flex; align-items: baseline; gap: 8px;
+      display: flex; align-items: center; gap: 8px;
+      white-space: nowrap; min-width: 0; overflow: hidden;
     }
-    .week-day-name { font-size: 15px; font-weight: 700; }
-    .week-day-date { font-size: 12px; color: var(--muted); }
+    .week-day-name { font-size: 15px; font-weight: 700; flex-shrink: 0; }
+    .week-day-date { font-size: 12px; color: var(--muted); flex-shrink: 0; }
     .week-day-chevron {
       font-size: 11px; color: var(--muted);
       transition: transform 0.2s;
+      flex-shrink: 0;
     }
     .week-day-row.expanded > .week-day-header .week-day-chevron { transform: rotate(180deg); }
     .week-day-locations {
@@ -841,6 +844,9 @@ function renderMenuSkeleton() {
 function renderMenu() {
   const grid = document.getElementById('menu-grid');
   const filtered = state.menu.filter(d => {
+    // Client-side active guard (server already filters, but belt-and-suspenders)
+    const a = d.active;
+    if (a !== undefined && a !== true && String(a).toUpperCase() !== 'TRUE' && a !== 1) return false;
     if (state.menuFilter === 'all') return true;
     return (d.category || 'full_meal') === state.menuFilter;
   });
@@ -1112,9 +1118,27 @@ function openOrderPanel() {
   document.body.style.overflow = 'hidden';
 }
 
+// Shared state reset used by both "Back to Menu" and closing the panel from step 4.
+// Clears cart/discount/pickup and returns to step 1.
+// Intentionally keeps customer name & phone for repeat orders.
+function _resetOrderState() {
+  state.cart          = [];
+  state.discount      = null;
+  state.customPricing = [];
+  state.pickup        = { date: '', location: null };
+  updateCartBadge();
+  goToStep(1);
+  const btn = document.getElementById('btn-confirm');
+  btn.disabled    = false;
+  btn.textContent = 'Confirm Order';
+}
+
 function closeOrderPanel() {
   document.getElementById('order-overlay').classList.remove('open');
   document.body.style.overflow = '';
+  // If the user dismissed the panel from the confirmation screen (✕ or tap-outside),
+  // clean up so the next open starts fresh — not on the old order's confirmation page.
+  if (state.currentStep === 4) _resetOrderState();
 }
 
 function handleOverlayClick(e) {
@@ -1196,11 +1220,10 @@ async function goToStep3() {
 
 /**
  * "← Continue Shopping" from step 3:
- * Goes back to step 1 WITHOUT clearing the cart, name, or phone.
- * Only pickup date/location needs re-entry.
+ * Returns to step 1 preserving the full cart, name, phone, AND pickup selection.
+ * The user can add more items and go straight back through to checkout.
  */
 function continueShoppingFromCheckout() {
-  state.pickup = { date: '', location: null };
   goToStep(1);
   renderCartList();
 }
@@ -1396,20 +1419,11 @@ async function submitOrder() {
 }
 
 function closeAndReset() {
-  state.cart          = [];
-  state.discount      = null;
-  state.customPricing = [];
-  state.pickup        = { date: '', location: null };
-  updateCartBadge();
-  closeOrderPanel();
-  goToStep(1);
-  // Reset form fields
+  // Full reset including name/phone (explicit "Back to Menu" action)
+  _resetOrderState();
   document.getElementById('inp-name').value  = '';
   document.getElementById('inp-phone').value = '';
-  // Reset confirm button explicitly
-  const btn = document.getElementById('btn-confirm');
-  btn.disabled    = false;
-  btn.textContent = 'Confirm Order';
+  closeOrderPanel(); // step is now 1, so closeOrderPanel won't re-trigger reset
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
