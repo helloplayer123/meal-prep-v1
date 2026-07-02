@@ -497,7 +497,7 @@
           <h3 style="margin-bottom:16px;font-size:16px">💳 PayNow Details</h3>
           <div class="form-group">
             <label class="form-label">PayNow Number</label>
-            <input class="form-control" type="text" id="pn-number" placeholder="+65 9123 4567">
+            <input class="form-control" type="text" id="pn-number" placeholder="9123 4567" inputmode="numeric">
           </div>
           <div class="form-group">
             <label class="form-label">Display Name</label>
@@ -647,11 +647,11 @@ const DEMO_LOCS = [
   {id:'l2',name:'Tiong Bahru',address:'302 Tiong Bahru Rd',availableDays:'4,5,6',active:true},
 ];
 const DEMO_ORDERS = [
-  {orderId:'ORD-DEMO1',timestamp:'2026-06-24T09:00:00Z',name:'Alice Tan',phone:'+65 9111 2222',
+  {orderId:'ORD-DEMO1',timestamp:'2026-06-24T09:00:00Z',name:'Alice Tan',phone:'9111 2222',
    pickupDate:'2026-06-27',pickupLocation:'Tanjong Pagar',
    items:[{dishId:'d1',dishName:'Teriyaki Chicken Bowl',quantity:2,unitPrice:14.50}],
    subtotal:29.00,discountType:'pct',discountValue:0,discountAmt:0,total:29.00,status:'confirmed'},
-  {orderId:'ORD-DEMO2',timestamp:'2026-06-24T10:30:00Z',name:'Ben Lim',phone:'+65 8222 3333',
+  {orderId:'ORD-DEMO2',timestamp:'2026-06-24T10:30:00Z',name:'Ben Lim',phone:'8222 3333',
    pickupDate:'2026-06-28',pickupLocation:'Tiong Bahru',
    items:[{dishId:'d2',dishName:'Salmon & Quinoa',quantity:1,unitPrice:17.00}],
    subtotal:17.00,discountType:'pct',discountValue:10,discountAmt:1.70,total:15.30,status:'confirmed'},
@@ -1512,8 +1512,8 @@ async function loadCustomers() {
   custData = CONFIG.apiUrl
     ? (await apiGet({ action:'getAllCustomers', token }) || [])
     : [
-        {phone:'+65 9111 2222',name:'Alice Tan',notes:'Loyal customer',discountType:'pct',discountValue:10},
-        {phone:'+65 8222 3333',name:'Ben Lim',notes:'',discountType:'fixed',discountValue:5},
+        {phone:'9111 2222',name:'Alice Tan',notes:'Loyal customer',discountType:'pct',discountValue:10},
+        {phone:'8222 3333',name:'Ben Lim',notes:'',discountType:'fixed',discountValue:5},
       ];
   renderCustomersTable();
 }
@@ -1655,7 +1655,7 @@ async function openCustomerModal(phone) {
     <input type="hidden" id="cust-phone-orig" value="${esc(c?.phone||'')}">
     <div class="form-grid-2">
       <div class="form-group"><label class="form-label">Phone *</label>
-        <input class="form-control" id="cust-phone" value="${esc(c?.phone||'')}" placeholder="+65 9123 4567">
+        <input class="form-control" id="cust-phone" value="${esc(c?.phone||'')}" placeholder="9123 4567" inputmode="numeric">
       </div>
       <div class="form-group"><label class="form-label">Name</label>
         <input class="form-control" id="cust-name" value="${esc(c?.name||'')}" placeholder="Customer name">
@@ -1710,8 +1710,21 @@ async function openCustomerModal(phone) {
   renderCustomPricingRows();
 }
 
+// Canonicalize a phone number to a bare Singapore local number: digits only,
+// no +65/65/0065 country code prefix. All numbers are assumed to be SG numbers.
+function canonicalPhone(raw) {
+  let digits = String(raw || '').replace(/\D/g, '');
+  if (digits.length > 8) {
+    if (digits.startsWith('0065'))     digits = digits.slice(4);
+    else if (digits.startsWith('065')) digits = digits.slice(3);
+    else if (digits.startsWith('65'))  digits = digits.slice(2);
+  }
+  if (digits.length > 8) digits = digits.slice(-8);
+  return digits;
+}
+
 async function saveCustomer() {
-  const phone    = document.getElementById('cust-phone').value.trim();
+  const phone    = canonicalPhone(document.getElementById('cust-phone').value);
   const name     = document.getElementById('cust-name').value.trim();
   const notes    = document.getElementById('cust-notes').value.trim();
   const discount = Number(document.getElementById('cust-discount').value);

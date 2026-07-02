@@ -523,7 +523,7 @@
     <div class="login-title" id="login-title">Members Only</div>
     <div class="login-sub" id="login-sub">Enter your registered phone number to browse this week's menu.</div>
     <div class="login-error" id="login-error"></div>
-    <input class="login-input" type="tel" id="login-phone" placeholder="+65 9123 4567"
+    <input class="login-input" type="tel" id="login-phone" placeholder="9123 4567" inputmode="numeric"
            onkeydown="if(event.key==='Enter') verifyPhoneLogin()">
     <button class="login-btn" id="login-btn" onclick="verifyPhoneLogin()">Continue →</button>
     <p class="login-hint">New here? Contact us to get added to the list.</p>
@@ -614,7 +614,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">Phone <span>*</span></label>
-            <input class="form-control" type="tel" id="inp-phone" placeholder="+65 9123 4567">
+            <input class="form-control" type="tel" id="inp-phone" placeholder="9123 4567" inputmode="numeric">
           </div>
         </div>
       </div>
@@ -1072,11 +1072,24 @@ async function loadMenuAndLocations() {
   renderMenu();
 }
 
+// Canonicalize a phone number to a bare Singapore local number: digits only,
+// no +65/65/0065 country code prefix. All numbers are assumed to be SG numbers.
+function canonicalPhone(raw) {
+  let digits = String(raw || '').replace(/\D/g, '');
+  if (digits.length > 8) {
+    if (digits.startsWith('0065'))     digits = digits.slice(4);
+    else if (digits.startsWith('065')) digits = digits.slice(3);
+    else if (digits.startsWith('65'))  digits = digits.slice(2);
+  }
+  if (digits.length > 8) digits = digits.slice(-8);
+  return digits;
+}
+
 async function verifyPhoneLogin() {
   const input = document.getElementById('login-phone');
   const btn   = document.getElementById('login-btn');
   const errEl = document.getElementById('login-error');
-  const phone = input.value.trim();
+  const phone = canonicalPhone(input.value);
 
   if (!phone) { errEl.textContent = 'Please enter your phone number.'; return; }
 
@@ -1473,7 +1486,7 @@ function updateStepIndicators(active) {
 function goToStep2() {
   if (!state.cart.length)               { showToast('Add at least one meal first'); return; }
   const name  = document.getElementById('inp-name').value.trim();
-  const phone = document.getElementById('inp-phone').value.trim();
+  const phone = canonicalPhone(document.getElementById('inp-phone').value);
   if (!name)  { document.getElementById('inp-name').classList.add('error');  showToast('Please enter your name');         return; }
   if (!phone) { document.getElementById('inp-phone').classList.add('error'); showToast('Please enter your phone number'); return; }
   document.getElementById('inp-name').classList.remove('error');
