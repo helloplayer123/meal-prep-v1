@@ -201,10 +201,12 @@
     .steps { display: flex; gap: 0; margin-bottom: 28px; }
     .step-item {
       flex: 1; text-align: center; position: relative;
+      transition: opacity 0.15s;
     }
     .step-item::after {
       content: ''; position: absolute; top: 16px; left: 50%; right: -50%;
       height: 2px; background: var(--border); z-index: 0;
+      transition: background 0.2s;
     }
     .step-item:last-child::after { display: none; }
     .step-dot {
@@ -213,14 +215,18 @@
       font-size: 13px; font-weight: 600;
       display: inline-flex; align-items: center; justify-content: center;
       position: relative; z-index: 1; margin-bottom: 6px;
-      transition: background 0.2s, color 0.2s;
+      transition: background 0.2s, color 0.2s, transform 0.15s;
     }
     .step-item.active .step-dot { background: var(--green); color: #fff; }
-    .step-item.done   .step-dot { background: var(--green-lt); color: var(--green); }
-    .step-item.done::after { background: var(--green-lt); }
+    .step-item.done   .step-dot { background: var(--green); color: #fff; }
+    .step-item.done::after { background: var(--green); }
     .step-item.active::after { background: var(--border); }
-    .step-lbl { font-size: 11px; color: var(--muted); font-weight: 500; }
+    .step-lbl { font-size: 11px; color: var(--muted); font-weight: 500; transition: color 0.15s; }
     .step-item.active .step-lbl { color: var(--green); font-weight: 600; }
+    .step-item.done .step-lbl   { color: var(--green); font-weight: 600; }
+    .step-item.done { cursor: pointer; }
+    .step-item.done:hover .step-dot { transform: scale(1.1); }
+    .step-item.done:hover .step-lbl { text-decoration: underline; }
 
     /* ── FORM ─────────────────────────────────────────────────────────────── */
     .panel-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
@@ -362,57 +368,50 @@
     .panel-close:hover { background: var(--border); }
     #order-panel { position: relative; }
 
-    /* ── WEEKLY VIEW (Step 2) ─────────────────────────────────────────────── */
-    .weekly-view { display: flex; flex-direction: column; gap: 8px; }
-    .week-day-row {
+    /* ── PICKUP SCHEDULE GRID (Step 2) ──────────────────────────── */
+    .cal-week-label { font-size: 13px; font-weight: 600; color: var(--muted); }
+    .pickup-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+    .pickup-col { display: flex; flex-direction: column; gap: 5px; }
+    .pickup-col-hdr {
+      text-align: center; padding: 6px 2px 8px;
+      border-bottom: 1.5px solid var(--border);
+      margin-bottom: 2px;
+    }
+    .pickup-col-hdr.no-slots { opacity: 0.25; }
+    .pickup-col-day {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      color: var(--muted); letter-spacing: 0.04em; margin-bottom: 4px;
+    }
+    .pickup-col-date {
+      font-size: 20px; font-weight: 700; line-height: 1; color: var(--fg);
+    }
+    .pickup-slot {
+      border-radius: 8px; font-size: 11px; font-weight: 600;
+      padding: 7px 4px; text-align: center; line-height: 1.3;
+      overflow: hidden; text-overflow: ellipsis;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      user-select: none; cursor: pointer;
+    }
+    .pickup-slot.avail {
+      background: var(--surface); color: var(--fg);
       border: 1.5px solid var(--border);
-      border-radius: 10px; overflow: hidden;
-      transition: border-color 0.15s;
     }
-    .week-day-row.has-selection { border-color: var(--green); }
-    .week-day-header {
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: nowrap;
-      padding: 12px 14px; cursor: pointer;
-      background: var(--surface);
-      transition: background 0.15s;
-      user-select: none;
-      gap: 8px;
+    .pickup-slot.avail:hover {
+      border-color: var(--green); background: var(--green-lt); color: var(--green);
     }
-    .week-day-header:hover { background: var(--green-lt); }
-    .week-day-row.expanded > .week-day-header { background: var(--green-lt); }
-    .week-day-label {
-      display: flex; align-items: center; gap: 8px;
-      white-space: nowrap; min-width: 0; overflow: hidden;
+    .pickup-slot.chosen {
+      background: var(--green); color: #fff;
+      border: 1.5px solid var(--green);
     }
-    .week-day-name { font-size: 15px; font-weight: 700; flex-shrink: 0; }
-    .week-day-date { font-size: 12px; color: var(--muted); flex-shrink: 0; }
-    .week-day-chevron {
-      font-size: 11px; color: var(--muted);
-      transition: transform 0.2s;
-      flex-shrink: 0;
+    .pickup-slot.chosen:hover { background: #2d5228; border-color: #2d5228; }
+    .pickup-selection-summary {
+      margin-top: 14px; padding: 10px 14px;
+      background: var(--green-lt); border: 1.5px solid var(--green);
+      border-radius: 10px; font-size: 13px; color: var(--green); font-weight: 600;
     }
-    .week-day-row.expanded > .week-day-header .week-day-chevron { transform: rotate(180deg); }
-    .week-day-locations {
-      display: none; padding: 8px 10px 10px;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-    }
-    .week-day-row.expanded > .week-day-locations { display: block; }
-    .location-card {
-      padding: 10px 12px; border: 1.5px solid var(--border);
-      border-radius: 8px; cursor: pointer; margin-bottom: 6px;
-      transition: border-color 0.15s, background 0.15s;
-    }
-    .location-card:last-child { margin-bottom: 0; }
-    .location-card:hover { border-color: var(--green); }
-    .location-card.selected { border-color: var(--green); background: var(--green-lt); }
-    .location-card input[type=radio] { display: none; }
-    .location-name {
-      font-size: 14px; font-weight: 600; margin-bottom: 2px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .location-addr { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* ── TOAST ────────────────────────────────────────────────────────────── */
     #toast {
@@ -438,9 +437,98 @@
     .empty-state-icon { font-size: 56px; margin-bottom: 16px; }
     .empty-state h3 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
     .empty-state p { color: var(--muted); font-size: 15px; }
+
+    /* ── LOGIN OVERLAY ────────────────────────────────────────────────────── */
+    #login-overlay {
+      position: fixed; inset: 0; z-index: 2000;
+      background: var(--bg);
+      display: none; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .login-box {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 48px 40px;
+      max-width: 420px; width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+    }
+    .login-icon { font-size: 48px; margin-bottom: 16px; }
+    .login-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .login-sub { font-size: 14px; color: var(--muted); margin-bottom: 28px; line-height: 1.5; }
+    .login-input {
+      width: 100%; padding: 14px 16px;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 16px; font-family: inherit;
+      margin-bottom: 12px; outline: none;
+      transition: border-color 0.15s;
+    }
+    .login-input:focus { border-color: var(--green); }
+    .login-btn {
+      width: 100%; padding: 14px;
+      background: var(--green); color: #fff;
+      border-radius: 10px; font-size: 15px; font-weight: 600;
+      border: none; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .login-btn:hover { background: var(--green-dk); }
+    .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .login-error {
+      font-size: 13px; color: var(--red);
+      background: #FDF0EE; border-radius: 8px;
+      padding: 10px 14px; margin-bottom: 12px;
+      display: none; text-align: left;
+    }
+    .login-hint { font-size: 13px; color: var(--muted); margin-top: 20px; }
+    .login-hint a { color: var(--green); text-decoration: underline; }
+
+    /* ── PAYNOW BLOCK ─────────────────────────────────────────────────────── */
+    .paynow-block {
+      background: var(--green-lt);
+      border: 1.5px solid var(--green);
+      border-radius: 14px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: left;
+    }
+    .paynow-title  { font-size: 15px; font-weight: 700; color: var(--green); margin-bottom: 6px; }
+    .paynow-amount { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+    .paynow-number { font-size: 14px; margin: 8px 0 4px; }
+    .paynow-name   { font-size: 13px; color: var(--muted); }
+    .paynow-hint   { font-size: 12px; color: var(--muted); margin-top: 12px; font-style: italic; }
+    .paynow-qr     { max-width: 180px; border-radius: 10px; margin: 0 auto 8px; display: block; }
+
+    /* ── ORDER STATUS ─────────────────────────────────────────────────────── */
+    .order-status-wrap { margin: 16px 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .order-status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;
+    }
+    .status-pending   { background: #FFF8E6; color: #B8860B; }
+    .status-active    { background: var(--green-lt); color: var(--green); }
+    .status-completed { background: #F0F0F0; color: #555; }
+    .status-cancelled { background: #FDF0EE; color: var(--red); }
+    .status-refresh-btn {
+      font-size: 12px; color: var(--muted); text-decoration: underline;
+      background: none; border: none; cursor: pointer;
+    }
   </style>
 </head>
 <body>
+
+<!-- ── LOGIN OVERLAY ───────────────────────────────────────────────────────── -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-icon">🥗</div>
+    <div class="login-title" id="login-title">Members Only</div>
+    <div class="login-sub" id="login-sub">Enter your registered phone number to browse this week's menu.</div>
+    <div class="login-error" id="login-error"></div>
+    <input class="login-input" type="tel" id="login-phone" placeholder="+65 9123 4567"
+           onkeydown="if(event.key==='Enter') verifyPhoneLogin()">
+    <button class="login-btn" id="login-btn" onclick="verifyPhoneLogin()">Continue →</button>
+    <p class="login-hint">New here? Contact us to get added to the list.</p>
+  </div>
+</div>
 
 <!-- ── HEADER ──────────────────────────────────────────────────────────────── -->
 <header>
@@ -564,8 +652,16 @@
 
       <div id="pickup-detail-boxes"><!-- populated by JS --></div>
 
+      <div class="form-group" style="margin-top:16px">
+        <label class="form-label" for="order-comments">Comments / Special Requests</label>
+        <textarea id="order-comments" class="form-input" rows="3"
+          placeholder="Allergies, preferences, or anything else we should know…"
+          oninput="state.comments=this.value"
+          style="resize:vertical;font-family:inherit;width:100%;box-sizing:border-box"></textarea>
+      </div>
+
       <div class="btn-row">
-        <button class="btn btn-secondary" onclick="continueShoppingFromCheckout()">← Continue Shopping</button>
+        <button class="btn btn-secondary" onclick="navToStep(2)">← Back</button>
         <button class="btn btn-primary" onclick="submitOrder()" id="btn-confirm">Confirm Order</button>
       </div>
     </div>
@@ -574,11 +670,21 @@
     <div id="step-4" style="display:none">
       <div style="text-align:center; padding: 16px 0">
         <div class="confirm-icon">🎉</div>
-        <div class="confirm-title">Order Confirmed!</div>
-        <div class="confirm-sub">Thanks, <strong id="confirm-name"></strong>! Your order has been placed.</div>
+        <div class="confirm-title">Order Placed!</div>
+        <div class="confirm-sub">Thanks, <strong id="confirm-name"></strong>! We'll confirm your order shortly.</div>
         <div class="order-id-box">Order ID: <span id="confirm-order-id"></span></div>
-        <div class="confirm-sub">We'll have your meals ready for pickup on<br><strong id="confirm-pickup-date"></strong> at <strong id="confirm-pickup-loc"></strong>.</div>
-        <div style="margin-top: 28px;">
+        <div class="confirm-sub" style="margin-top:8px">Pickup: <strong id="confirm-pickup-date"></strong> · <strong id="confirm-pickup-loc"></strong></div>
+
+        <!-- Order status -->
+        <div class="order-status-wrap" id="order-status-wrap">
+          <span class="order-status-badge status-pending" id="order-status-badge">⏳ Pending</span>
+          <button class="status-refresh-btn" onclick="refreshOrderStatus()">Refresh</button>
+        </div>
+
+        <!-- PayNow payment -->
+        <div id="paynow-section"></div>
+
+        <div style="margin-top: 24px;">
           <button class="btn btn-primary" onclick="closeAndReset()" style="width:100%">Back to Menu</button>
         </div>
       </div>
@@ -594,7 +700,7 @@
 // CONFIG — update apiUrl after deploying your Google Apps Script
 // ═══════════════════════════════════════════════════════════════════════════════
 const CONFIG = {
-  apiUrl: 'https://script.google.com/macros/s/AKfycbz_mgzQuu_LIrv8Y2VD4hYKe0MY1jCPNuru8qg0sSjarGp_BYCmDNcDrhGjTyU2j2is/exec',
+  apiUrl: 'https://script.google.com/macros/s/AKfycbyHkYeHpLGvFbesJXOijQSMHlR_7X6VHwUqOt2lVUVagzrHcSgVNavMYL5xRj1fGCc-/exec',
   businessName: '404 hunger not found',
   tagline: 'Overflowing Pots & Overcrowded Pans',
   currency: 'SGD',
@@ -607,10 +713,12 @@ const CONFIG = {
 const MACROS = {
   protein: {
     'Chicken Breast':     { cal: 165, p: 31, c: 0,  f: 3.6 },
+    'Chicken Thigh':      { cal: 177, p: 24, c: 0,  f: 9   },
     'Salmon':             { cal: 208, p: 20, c: 0,  f: 13  },
     'Tuna (Canned)':      { cal: 132, p: 28, c: 0,  f: 1   },
     'Tofu (Firm)':        { cal: 76,  p: 8,  c: 2,  f: 4   },
     'Eggs (Scrambled)':   { cal: 155, p: 13, c: 1,  f: 11  },
+    'Egg (Ajitama)':      { cal: 150, p: 12.5, c: 2, f: 10 },
     'Ground Beef (Lean)': { cal: 215, p: 26, c: 0,  f: 12  },
     'Shrimp':             { cal: 99,  p: 24, c: 0,  f: 0.3 },
     'Pork Tenderloin':    { cal: 143, p: 26, c: 0,  f: 4   },
@@ -684,27 +792,143 @@ function calcMacros(dish) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SVG PLACEHOLDER
+// SVG PLACEHOLDERS — 6 distinct food illustrations, picked by dish id hash
 // ═══════════════════════════════════════════════════════════════════════════════
-function dishPlaceholderSVG() {
-  return `<svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
-    <rect width="320" height="180" fill="#EDF3EB"/>
-    <ellipse cx="160" cy="152" rx="72" ry="10" fill="#C4854A" opacity="0.18"/>
-    <path d="M88 100 Q88 155 160 155 Q232 155 232 100 Z" fill="#F7F5F2" stroke="#C4854A" stroke-width="2.5"/>
-    <ellipse cx="160" cy="100" rx="72" ry="18" fill="#FFFFFF" stroke="#C4854A" stroke-width="2.5"/>
-    <ellipse cx="160" cy="98" rx="58" ry="12" fill="#EDF3EB"/>
-    <rect x="130" y="80" width="34" height="20" rx="6" fill="#C4854A" opacity="0.85"/>
-    <rect x="158" y="76" width="28" height="16" rx="5" fill="#B8703C" opacity="0.75"/>
-    <ellipse cx="120" cy="90" rx="14" ry="8" fill="#3D6B35" opacity="0.8"/>
-    <ellipse cx="112" cy="86" rx="10" ry="6" fill="#4A8040" opacity="0.7"/>
-    <path d="M148 68 Q145 60 148 52" stroke="#C4854A" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
-    <path d="M160 65 Q157 57 160 49" stroke="#C4854A" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
-    <path d="M172 68 Q169 60 172 52" stroke="#C4854A" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
-  </svg>`;
+function _dishHash(key) {
+  let h = 5381;
+  const s = String(key || '');
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h ^ s.charCodeAt(i)) >>> 0;
+  return h;
 }
 
-function dishPlaceholder() {
-  return `<div class="dish-card-img-placeholder">${dishPlaceholderSVG()}</div>`;
+function dishPlaceholderSVG(dishKey) {
+  const svgs = [
+    // 0 — Soup bowl (green, floating pork + tofu, steam)
+    `<svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+      <rect width="320" height="180" fill="#EDF3EB"/>
+      <ellipse cx="160" cy="152" rx="72" ry="10" fill="#C4854A" opacity="0.18"/>
+      <path d="M88 100 Q88 155 160 155 Q232 155 232 100 Z" fill="#F7F5F2" stroke="#C4854A" stroke-width="2.5"/>
+      <ellipse cx="160" cy="100" rx="72" ry="18" fill="#FFFFFF" stroke="#C4854A" stroke-width="2.5"/>
+      <ellipse cx="160" cy="98" rx="58" ry="12" fill="#EDF3EB"/>
+      <rect x="130" y="80" width="34" height="20" rx="6" fill="#C4854A" opacity="0.85"/>
+      <rect x="158" y="76" width="28" height="16" rx="5" fill="#B8703C" opacity="0.75"/>
+      <ellipse cx="120" cy="90" rx="14" ry="8" fill="#3D6B35" opacity="0.8"/>
+      <ellipse cx="112" cy="86" rx="10" ry="6" fill="#4A8040" opacity="0.7"/>
+      <path d="M148 68 Q145 60 148 52" stroke="#C4854A" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+      <path d="M160 65 Q157 57 160 49" stroke="#C4854A" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+      <path d="M172 68 Q169 60 172 52" stroke="#C4854A" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+    </svg>`,
+
+    // 1 — Grilled plate (warm cream, grill marks, herb garnish)
+    `<svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+      <rect width="320" height="180" fill="#FEF5EC"/>
+      <ellipse cx="160" cy="158" rx="78" ry="10" fill="#C4854A" opacity="0.12"/>
+      <ellipse cx="160" cy="135" rx="80" ry="24" fill="#FFFFFF" stroke="#E8D9C8" stroke-width="2"/>
+      <ellipse cx="160" cy="133" rx="70" ry="19" fill="#FAFAF8"/>
+      <rect x="108" y="116" width="60" height="28" rx="10" fill="#9A4A1E"/>
+      <rect x="108" y="116" width="60" height="8" rx="5" fill="#C4854A" opacity="0.55"/>
+      <line x1="116" y1="124" x2="160" y2="124" stroke="#5C2E0A" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+      <line x1="116" y1="130" x2="160" y2="130" stroke="#5C2E0A" stroke-width="2.5" stroke-linecap="round" opacity="0.55"/>
+      <line x1="116" y1="136" x2="160" y2="136" stroke="#5C2E0A" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+      <ellipse cx="196" cy="129" rx="15" ry="9" fill="#4A8040" opacity="0.85"/>
+      <ellipse cx="208" cy="124" rx="9" ry="6" fill="#3D6B35" opacity="0.75"/>
+      <ellipse cx="204" cy="137" rx="7" ry="5" fill="#5A9050" opacity="0.7"/>
+      <ellipse cx="138" cy="149" rx="9" ry="5" fill="#F5D76E" opacity="0.7"/>
+      <line x1="138" y1="144" x2="138" y2="154" stroke="#B8A040" stroke-width="1" opacity="0.45"/>
+    </svg>`,
+
+    // 2 — Rice bowl (beige, rice texture, protein topping, sesame)
+    `<svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+      <rect width="320" height="180" fill="#F8F5F0"/>
+      <path d="M148 72 Q145 62 148 54" stroke="#C0B0A0" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+      <path d="M162 68 Q159 58 162 50" stroke="#C0B0A0" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+      <path d="M176 72 Q173 62 176 54" stroke="#C0B0A0" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.45"/>
+      <ellipse cx="160" cy="155" rx="72" ry="10" fill="#8B7355" opacity="0.14"/>
+      <path d="M88 105 Q90 155 160 157 Q230 155 232 105 Z" fill="#FFFFFF" stroke="#D4C4B0" stroke-width="2.5"/>
+      <ellipse cx="160" cy="105" rx="72" ry="18" fill="#FFFFFF" stroke="#D4C4B0" stroke-width="2.5"/>
+      <ellipse cx="160" cy="103" rx="62" ry="14" fill="#FFF8F0"/>
+      <ellipse cx="146" cy="101" rx="5" ry="3" fill="#EDE0D0" opacity="0.8"/>
+      <ellipse cx="160" cy="99" rx="5" ry="3" fill="#EDE0D0" opacity="0.8"/>
+      <ellipse cx="174" cy="101" rx="4.5" ry="2.5" fill="#EDE0D0" opacity="0.7"/>
+      <ellipse cx="152" cy="108" rx="4.5" ry="2.5" fill="#EDE0D0" opacity="0.7"/>
+      <ellipse cx="168" cy="108" rx="4" ry="2.5" fill="#EDE0D0" opacity="0.65"/>
+      <ellipse cx="140" cy="107" rx="3.5" ry="2" fill="#EDE0D0" opacity="0.6"/>
+      <rect x="140" y="88" width="42" height="22" rx="8" fill="#B8703C"/>
+      <rect x="140" y="88" width="42" height="7" rx="4" fill="#C4854A" opacity="0.5"/>
+      <circle cx="149" cy="94" r="1.8" fill="#F5E060" opacity="0.85"/>
+      <circle cx="158" cy="96" r="1.8" fill="#F5E060" opacity="0.85"/>
+      <circle cx="167" cy="94" r="1.8" fill="#F5E060" opacity="0.85"/>
+      <circle cx="174" cy="96" r="1.5" fill="#F5E060" opacity="0.75"/>
+      <ellipse cx="130" cy="97" rx="9" ry="5" fill="#4A8040" opacity="0.8"/>
+    </svg>`,
+
+    // 3 — Salad bowl (bright green, colourful veg, fresh)
+    `<svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+      <rect width="320" height="180" fill="#EBF8EB"/>
+      <ellipse cx="160" cy="157" rx="82" ry="10" fill="#3D6B35" opacity="0.1"/>
+      <path d="M78 112 Q82 154 160 156 Q238 154 242 112 Z" fill="#FFFFFF" stroke="#C0E0C0" stroke-width="2.5"/>
+      <ellipse cx="160" cy="112" rx="82" ry="22" fill="#FFFFFF" stroke="#C0E0C0" stroke-width="2.5"/>
+      <ellipse cx="160" cy="110" rx="72" ry="18" fill="#D8F0D8" opacity="0.5"/>
+      <ellipse cx="138" cy="106" rx="20" ry="11" fill="#5A9050" opacity="0.8" transform="rotate(-15 138 106)"/>
+      <ellipse cx="165" cy="103" rx="18" ry="10" fill="#4A8040" opacity="0.85" transform="rotate(10 165 103)"/>
+      <ellipse cx="188" cy="108" rx="15" ry="9" fill="#3D6B35" opacity="0.8" transform="rotate(-8 188 108)"/>
+      <ellipse cx="150" cy="115" rx="14" ry="8" fill="#6AAB60" opacity="0.75" transform="rotate(20 150 115)"/>
+      <ellipse cx="176" cy="116" rx="14" ry="7" fill="#5A9050" opacity="0.7" transform="rotate(-12 176 116)"/>
+      <circle cx="146" cy="98" r="8" fill="#E85050"/>
+      <circle cx="146" cy="98" r="8" fill="none" stroke="#B83030" stroke-width="1" opacity="0.4"/>
+      <circle cx="173" cy="100" r="6.5" fill="#E85050" opacity="0.9"/>
+      <ellipse cx="162" cy="108" rx="11" ry="5.5" fill="#F5A020" opacity="0.9" transform="rotate(22 162 108)"/>
+      <ellipse cx="133" cy="114" rx="10" ry="5" fill="#70C870" opacity="0.9" transform="rotate(-22 133 114)"/>
+      <circle cx="187" cy="99" r="9" fill="#F5D050" opacity="0.85"/>
+      <circle cx="187" cy="99" r="6" fill="#F0B830" opacity="0.65"/>
+      <circle cx="157" cy="118" r="2.5" fill="#FFFFFF" opacity="0.9"/>
+      <circle cx="165" cy="120" r="2" fill="#FFFFFF" opacity="0.85"/>
+      <circle cx="150" cy="121" r="2" fill="#FFFFFF" opacity="0.8"/>
+    </svg>`,
+
+    // 4 — Protein plate (salmon bg, two protein pieces, sear marks, herb dots)
+    `<svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+      <rect width="320" height="180" fill="#FDF2EE"/>
+      <ellipse cx="160" cy="158" rx="80" ry="10" fill="#A0522D" opacity="0.12"/>
+      <ellipse cx="160" cy="135" rx="82" ry="25" fill="#FFFFFF" stroke="#E8D0C0" stroke-width="2.5"/>
+      <ellipse cx="160" cy="133" rx="72" ry="21" fill="#FAFAF8"/>
+      <rect x="104" y="116" width="58" height="28" rx="11" fill="#7B3A10"/>
+      <path d="M104 122 Q133 116 162 122" stroke="#9A4A20" stroke-width="9" fill="none" stroke-linecap="round" opacity="0.55"/>
+      <line x1="112" y1="126" x2="153" y2="126" stroke="#4A1E06" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+      <line x1="112" y1="133" x2="153" y2="133" stroke="#4A1E06" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/>
+      <rect x="164" y="119" width="38" height="22" rx="8" fill="#9A4A20" transform="rotate(-7 164 119)"/>
+      <rect x="164" y="119" width="38" height="7" rx="4" fill="#C4854A" opacity="0.45" transform="rotate(-7 164 119)"/>
+      <path d="M118 150 Q142 146 162 150 Q178 153 190 149" stroke="#7A5A10" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.4"/>
+      <circle cx="103" cy="136" r="4.5" fill="#4A8040" opacity="0.8"/>
+      <circle cx="111" cy="131" r="3.5" fill="#3D6B35" opacity="0.7"/>
+      <circle cx="97" cy="130" r="3" fill="#5A9050" opacity="0.7"/>
+    </svg>`,
+
+    // 5 — Comfort bowl (warm white, creamy mash, gravy, protein, steam)
+    `<svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+      <rect width="320" height="180" fill="#FFF9F0"/>
+      <path d="M144 72 Q141 62 144 54" stroke="#D4B898" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.55"/>
+      <path d="M160 68 Q157 58 160 50" stroke="#D4B898" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.55"/>
+      <path d="M176 72 Q173 62 176 54" stroke="#D4B898" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+      <ellipse cx="160" cy="156" rx="72" ry="10" fill="#8B7355" opacity="0.14"/>
+      <path d="M88 105 Q90 155 160 157 Q230 155 232 105 Z" fill="#FFFFFF" stroke="#D4C4B0" stroke-width="2.5"/>
+      <ellipse cx="160" cy="105" rx="72" ry="18" fill="#FFFFFF" stroke="#D4C4B0" stroke-width="2.5"/>
+      <ellipse cx="160" cy="103" rx="62" ry="14" fill="#F5E8D0"/>
+      <path d="M100 103 Q120 96 142 103 Q162 110 182 103 Q202 96 220 103" stroke="#E0C898" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.65"/>
+      <ellipse cx="168" cy="105" rx="30" ry="11" fill="#7A5A14" opacity="0.3"/>
+      <rect x="147" y="91" width="36" height="20" rx="7" fill="#8B4513"/>
+      <rect x="147" y="91" width="36" height="7" rx="4" fill="#A0522D" opacity="0.55"/>
+      <circle cx="136" cy="113" r="3" fill="#3D6B35" opacity="0.7"/>
+      <circle cx="145" cy="116" r="2.5" fill="#4A8040" opacity="0.65"/>
+      <circle cx="128" cy="110" r="2.5" fill="#3D6B35" opacity="0.6"/>
+    </svg>`,
+  ];
+
+  return svgs[_dishHash(dishKey) % svgs.length];
+}
+
+function dishPlaceholder(dishKey) {
+  return `<div class="dish-card-img-placeholder">${dishPlaceholderSVG(dishKey)}</div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -757,15 +981,20 @@ const DEMO_LOCATIONS = [
 // STATE
 // ═══════════════════════════════════════════════════════════════════════════════
 let state = {
-  menu:          [],
-  locations:     [],
-  cart:          [],
-  customer:      { name: '', phone: '' },
-  pickup:        { date: '', location: null },
-  discount:      null,
-  customPricing: [],
-  currentStep:   1,
-  menuFilter:    'all',
+  menu:            [],
+  locations:       [],
+  cart:            [],
+  customer:        { name: '', phone: '' },
+  pickup:          { date: '', location: null },
+  discount:        null,
+  customPricing:   [],
+  currentStep:     1,
+  maxStepReached:  1,
+  menuFilter:      'all',
+  paynow:          null,
+  currentOrderId:  null,
+  calWeekOffset:   0,
+  comments:        '',
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -807,15 +1036,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('hero-title').innerHTML =
     CONFIG.tagline.replace('. ', '.<br>');
 
+  // Phone gate — show login overlay if not yet verified
+  const savedPhone = sessionStorage.getItem('verified_phone');
+  const savedName  = sessionStorage.getItem('verified_name');
+  if (!savedPhone) {
+    document.getElementById('login-overlay').style.display = 'flex';
+    return; // loadMenuAndLocations() called after successful login
+  }
+
+  // Already verified — restore customer info
+  state.customer.phone = savedPhone;
+  state.customer.name  = savedName || '';
+
+  await loadMenuAndLocations();
+});
+
+async function loadMenuAndLocations() {
   renderMenuSkeleton();
 
   if (CONFIG.apiUrl) {
-    const [menuData, locData] = await Promise.all([
+    const [menuData, locData, paynowData] = await Promise.all([
       apiGet({ action: 'getMenu' }),
       apiGet({ action: 'getLocations' }),
+      apiGet({ action: 'getPayNowConfig' }),
     ]);
-    state.menu      = menuData  || DEMO_MENU;
-    state.locations = locData   || DEMO_LOCATIONS;
+    state.menu      = menuData   || DEMO_MENU;
+    state.locations = locData    || DEMO_LOCATIONS;
+    state.paynow    = paynowData || null;
   } else {
     await new Promise(r => setTimeout(r, 600));
     state.menu      = DEMO_MENU;
@@ -823,7 +1070,50 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   renderMenu();
-});
+}
+
+async function verifyPhoneLogin() {
+  const input = document.getElementById('login-phone');
+  const btn   = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+  const phone = input.value.trim();
+
+  if (!phone) { errEl.textContent = 'Please enter your phone number.'; return; }
+
+  btn.disabled    = true;
+  btn.textContent = 'Checking…';
+  errEl.textContent = '';
+
+  try {
+    let verified = false, name = '';
+
+    if (CONFIG.apiUrl) {
+      const res = await apiGet({ action: 'verifyCustomer', phone });
+      verified = res?.verified === true;
+      name     = res?.name || '';
+    } else {
+      // Demo mode — accept any number
+      verified = true;
+      name     = 'Demo User';
+    }
+
+    if (verified) {
+      sessionStorage.setItem('verified_phone', phone);
+      sessionStorage.setItem('verified_name',  name);
+      state.customer.phone = phone;
+      state.customer.name  = name;
+      document.getElementById('login-overlay').style.display = 'none';
+      await loadMenuAndLocations();
+    } else {
+      errEl.textContent = 'Number not recognised. Contact us to get access.';
+    }
+  } catch (e) {
+    errEl.textContent = 'Could not connect. Please try again.';
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Continue →';
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MENU FILTER
@@ -873,8 +1163,8 @@ function renderMenu() {
   grid.innerHTML = filtered.map(dish => {
     const m = calcMacros(dish);
     const imgHtml = dish.photoUrl
-      ? `<img class="dish-card-img" src="${esc(dish.photoUrl)}" alt="${esc(dish.name)}" onerror="this.parentElement.innerHTML=dishPlaceholder()">`
-      : dishPlaceholder();
+      ? `<div class="dish-card-img-placeholder"><img class="dish-card-img" src="${esc(normalizePhotoUrl(dish.photoUrl))}" alt="${esc(dish.name)}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" onerror="this.parentElement.innerHTML=dishPlaceholderSVG('${esc(dish.id)}')"></div>`
+      : dishPlaceholder(dish.id);
 
     const comps = getDishComponents(dish);
     const chipIcons = { protein: '🥩', carb: '🌾', fiber: '🥦' };
@@ -958,8 +1248,8 @@ function renderCartList() {
   emptyMsg.style.display = 'none';
   container.innerHTML = state.cart.map(({ dish, quantity }) => {
     const imgHtml = dish.photoUrl
-      ? `<img src="${esc(dish.photoUrl)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='${dishPlaceholderSVG().replace(/'/g, "\\'")}'">`
-      : dishPlaceholderSVG();
+      ? `<img src="${esc(normalizePhotoUrl(dish.photoUrl))}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=dishPlaceholderSVG('${esc(dish.id)}')">`
+      : dishPlaceholderSVG(dish.id);
     return `
       <div class="cart-item">
         <div class="cart-item-img">${imgHtml}</div>
@@ -1009,109 +1299,87 @@ function getLocationsForDay(dayNum) {
 
 function renderWeeklyView() {
   const container = document.getElementById('weekly-view');
-  const dayNames  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const months    = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  if (!container) return;
+  const DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MONTHS    = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const allowed   = getAllowedDayNumbers();
 
-  // Build the next 4 occurrences of allowed days
+  const localIso = d => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   const today = new Date();
-  const dayEntries = []; // { iso, dayNum, dayName, dateLabel }
-  for (let i = 1; i <= 28 && dayEntries.length < 7; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    const dn = d.getDay();
-    if (allowed.has(dn)) {
-      const iso = d.toISOString().split('T')[0];
-      dayEntries.push({
-        iso,
-        dayNum: dn,
-        dayName: dayNames[dn],
-        dateLabel: `${d.getDate()} ${months[d.getMonth()]}`,
-      });
-    }
-  }
+  today.setHours(0, 0, 0, 0);
+  const todayIso = localIso(today);
 
-  if (!dayEntries.length) {
-    container.innerHTML = '<p style="color:var(--muted);font-size:14px">No available pickup days found.</p>';
-    return;
-  }
+  const todayDow = today.getDay();
+  const nextSunday = new Date(today);
+  nextSunday.setDate(today.getDate() - todayDow + 7);
 
-  container.innerHTML = dayEntries.map(entry => {
-    const locs = getLocationsForDay(entry.dayNum);
-    const isSelected = state.pickup.date === entry.iso;
-    // A day row is expanded if it's selected or if it was the last clicked
-    const isExpanded = isSelected;
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(nextSunday);
+    d.setDate(nextSunday.getDate() + i);
+    return d;
+  });
 
-    const locHtml = locs.map(loc => {
-      const locSelected = isSelected && state.pickup.location?.id === loc.id;
-      return `<label class="location-card${locSelected ? ' selected' : ''}"
-                onclick="selectDayLocation('${entry.iso}', '${loc.id}', event)">
-        <input type="radio" name="pickup-location" value="${loc.id}"${locSelected ? ' checked' : ''}>
-        <div class="location-name">📍 ${esc(loc.name)}</div>
-        <div class="location-addr">${esc(loc.address || '')}</div>
-      </label>`;
+  const firstD = days[0], lastD = days[6];
+  const weekLabel = firstD.getMonth() === lastD.getMonth()
+    ? `${firstD.getDate()}–${lastD.getDate()} ${MONTHS[lastD.getMonth()]} ${lastD.getFullYear()}`
+    : `${firstD.getDate()} ${MONTHS[firstD.getMonth()]} – ${lastD.getDate()} ${MONTHS[lastD.getMonth()]}`;
+
+  const cols = days.map(d => {
+    const iso = localIso(d);
+    const dow = d.getDay();
+    const isPast  = iso < todayIso;
+    const hasLocs = getLocationsForDay(dow).length > 0;
+    const isAvail = !isPast && allowed.has(dow) && hasLocs;
+    const locs    = isAvail ? getLocationsForDay(dow) : [];
+
+    const pills = locs.map(loc => {
+      const isChosen = state.pickup.date === iso && state.pickup.location?.id === loc.id;
+      return `<div class="pickup-slot ${isChosen ? 'chosen' : 'avail'}"
+                   onclick="selectPickupSlot('${iso}','${loc.id}')">${esc(loc.name)}</div>`;
     }).join('');
 
-    return `
-      <div class="week-day-row${isExpanded ? ' expanded' : ''}${isSelected ? ' has-selection' : ''}" id="day-row-${entry.iso}">
-        <div class="week-day-header" onclick="toggleDayRow('${entry.iso}')">
-          <div class="week-day-label">
-            <span class="week-day-name">${entry.dayName}</span>
-            <span class="week-day-date">${entry.dateLabel}</span>
-          </div>
-          <span class="week-day-chevron">▼</span>
-        </div>
-        <div class="week-day-locations">
-          ${locHtml || '<p style="color:var(--muted);font-size:13px;padding:4px 0">No locations available.</p>'}
-        </div>
-      </div>`;
+    return `<div class="pickup-col">
+      <div class="pickup-col-hdr${isAvail ? '' : ' no-slots'}">
+        <div class="pickup-col-day">${DAY_SHORT[dow]}</div>
+        <div class="pickup-col-date">${d.getDate()}</div>
+      </div>
+      ${pills}
+    </div>`;
   }).join('');
-}
 
-/**
- * Toggle a day row open/closed.
- * If the row's date is currently selected, clicking it deselects (toggle off).
- */
-function toggleDayRow(iso) {
-  const row = document.getElementById(`day-row-${iso}`);
-  if (!row) return;
-
-  const isExpanded = row.classList.contains('expanded');
-
-  // Collapse all rows first
-  document.querySelectorAll('.week-day-row').forEach(r => r.classList.remove('expanded'));
-
-  if (isExpanded) {
-    // Clicking an open (selected) row toggles it off
-    if (state.pickup.date === iso) {
-      state.pickup.date     = '';
-      state.pickup.location = null;
-      row.classList.remove('has-selection');
-    }
-    // Row stays collapsed
-  } else {
-    // Open this row
-    row.classList.add('expanded');
+  let summaryHtml = '';
+  if (state.pickup.date && state.pickup.location) {
+    const d = new Date(state.pickup.date + 'T00:00:00');
+    summaryHtml = `<div class="pickup-selection-summary">
+      ✅ ${DAY_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} · 📍 ${esc(state.pickup.location.name)}
+    </div>`;
   }
+
+  container.innerHTML = `
+    <div style="margin-bottom:10px">
+      <span class="cal-week-label">Pickup week: ${weekLabel}</span>
+    </div>
+    <div class="pickup-grid">${cols}</div>
+    ${summaryHtml}`;
 }
 
-/**
- * Select a specific location within a day, also setting the pickup date.
- */
-function selectDayLocation(iso, locId, event) {
-  event.stopPropagation(); // Don't bubble to toggleDayRow
-  state.pickup.date     = iso;
-  state.pickup.location = state.locations.find(l => l.id === locId) || null;
-
-  // Update UI: mark selected location
-  document.querySelectorAll('.location-card').forEach(el => el.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
-
-  // Mark the day row as having a selection
-  document.querySelectorAll('.week-day-row').forEach(r => r.classList.remove('has-selection'));
-  const row = document.getElementById(`day-row-${iso}`);
-  if (row) row.classList.add('has-selection');
+function selectPickupSlot(iso, locId) {
+  if (state.pickup.date === iso && state.pickup.location?.id === locId) {
+    state.pickup = { date: '', location: null };
+  } else {
+    state.pickup.date     = iso;
+    state.pickup.location = state.locations.find(l => l.id === locId) || null;
+  }
+  renderWeeklyView();
 }
+
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ORDER PANEL
@@ -1120,16 +1388,22 @@ function openOrderPanel() {
   document.getElementById('order-overlay').classList.add('open');
   renderCartList();
   document.body.style.overflow = 'hidden';
+  // Pre-fill name/phone from verified session
+  if (state.customer.name)  document.getElementById('inp-name').value  = state.customer.name;
+  if (state.customer.phone) document.getElementById('inp-phone').value = state.customer.phone;
 }
 
 // Shared state reset used by both "Back to Menu" and closing the panel from step 4.
 // Clears cart/discount/pickup and returns to step 1.
 // Intentionally keeps customer name & phone for repeat orders.
 function _resetOrderState() {
-  state.cart          = [];
-  state.discount      = null;
-  state.customPricing = [];
-  state.pickup        = { date: '', location: null };
+  state.cart            = [];
+  state.discount        = null;
+  state.customPricing   = [];
+  state.pickup          = { date: '', location: null };
+  state.calWeekOffset   = 0;
+  state.comments        = '';
+  state.maxStepReached  = 1;
   updateCartBadge();
   goToStep(1);
   const btn = document.getElementById('btn-confirm');
@@ -1158,8 +1432,21 @@ function goToStep(n) {
     document.getElementById(`step-${i}`).style.display = i === n ? 'block' : 'none';
   });
   state.currentStep = n;
+  if (n > state.maxStepReached) state.maxStepReached = n;
   updateStepIndicators(n);
   document.getElementById('order-panel').scrollTop = 0;
+  // Restore persisted comments when returning to step 3
+  if (n === 3) {
+    const ta = document.getElementById('order-comments');
+    if (ta) ta.value = state.comments || '';
+  }
+}
+
+function navToStep(n) {
+  // Navigate backward to a previously reached step
+  if (n >= state.currentStep || n > state.maxStepReached) return;
+  if (n === 2) { goToStep(2); renderWeeklyView(); return; }
+  if (n === 1) { goToStep(1); renderCartList(); return; }
 }
 
 function updateStepIndicators(active) {
@@ -1167,7 +1454,17 @@ function updateStepIndicators(active) {
     const el = document.getElementById(`step-ind-${i}`);
     if (!el) return;
     el.className = 'step-item';
-    if (i < active)  el.classList.add('done');
+    if (i < active && i <= state.maxStepReached) {
+      el.classList.add('done');
+      el.onclick = () => navToStep(i);
+      // Show ✓ in dot for completed steps
+      const dot = el.querySelector('.step-dot');
+      if (dot) dot.textContent = '✓';
+    } else {
+      el.onclick = null;
+      const dot = el.querySelector('.step-dot');
+      if (dot) dot.textContent = i;
+    }
     if (i === active) el.classList.add('active');
   });
   document.getElementById('step-indicators').style.display = active === 4 ? 'none' : 'flex';
@@ -1294,11 +1591,18 @@ function renderCheckout() {
 
   const summaryRows = state.cart.map(({ dish, quantity }) => {
     const effectivePrice = getEffectivePrice(dish);
-    const hasCustom = effectivePrice !== Number(dish.price);
+    const origPrice = Number(dish.price);
+    const hasCustom = effectivePrice !== origPrice;
+    const priceDisplay = hasCustom
+      ? `<span style="text-decoration:line-through;opacity:0.45;font-size:0.85em">${CONFIG.symbol}${(origPrice * quantity).toFixed(2)}</span> ${CONFIG.symbol}${(effectivePrice * quantity).toFixed(2)}`
+      : `${CONFIG.symbol}${(effectivePrice * quantity).toFixed(2)}`;
+    const unitDisplay = hasCustom
+      ? `<span style="font-size:0.8em;opacity:0.55;margin-left:4px">(${CONFIG.symbol}${effectivePrice.toFixed(2)}/ea)</span>`
+      : '';
     return `
       <div class="summary-row">
-        <span>${esc(dish.name)} × ${quantity}${hasCustom ? '<span class="summary-custom-price"> (custom price)</span>' : ''}</span>
-        <span>${CONFIG.symbol}${(effectivePrice * quantity).toFixed(2)}</span>
+        <span>${esc(dish.name)} × ${quantity}${unitDisplay}</span>
+        <span>${priceDisplay}</span>
       </div>`;
   }).join('');
 
@@ -1368,6 +1672,8 @@ async function submitOrder() {
     }
     const total = subtotal - discountAmt;
 
+    const orderComments = (document.getElementById('order-comments')?.value || state.comments || '').trim();
+
     const orderPayload = {
       name:           state.customer.name,
       phone:          state.customer.phone,
@@ -1378,12 +1684,14 @@ async function submitOrder() {
         dishName:   i.dish.name,
         quantity:   i.quantity,
         unitPrice:  getEffectivePrice(i.dish),
+        origPrice:  Number(i.dish.price),
       })),
       subtotal,
       discountType:  discount?.discountType  || 'pct',
       discountValue: discount?.discountValue || 0,
       discountAmt,
       total,
+      comments:      orderComments,
     };
 
     let orderId = 'DEMO-' + Math.random().toString(36).substring(2,8).toUpperCase();
@@ -1407,12 +1715,33 @@ async function submitOrder() {
     }
 
     // Show confirmation
+    state.currentOrderId = orderId;
     document.getElementById('confirm-name').textContent = state.customer.name;
     document.getElementById('confirm-order-id').textContent = orderId;
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const [y,m,d] = state.pickup.date.split('-');
     document.getElementById('confirm-pickup-date').textContent = `${d} ${months[m-1]} ${y}`;
     document.getElementById('confirm-pickup-loc').textContent  = state.pickup.location.name;
+
+    // Render PayNow section
+    const paynow = state.paynow;
+    const pnSection = document.getElementById('paynow-section');
+    if (paynow && (paynow.number || paynow.qrUrl)) {
+      const totalDisplay = `${CONFIG.symbol}${(total).toFixed(2)}`;
+      pnSection.innerHTML = `
+        <div class="paynow-block">
+          <div class="paynow-title">💳 Pay via PayNow</div>
+          <div class="paynow-amount">Amount: <strong>${totalDisplay}</strong></div>
+          ${paynow.qrUrl ? `<img class="paynow-qr" src="${esc(normalizePhotoUrl(paynow.qrUrl))}" alt="PayNow QR" onerror="this.style.display='none'">` : ''}
+          ${paynow.number ? `<div class="paynow-number">PayNow to: <strong>${esc(paynow.number)}</strong>${paynow.name ? ` <span class="paynow-name">(${esc(paynow.name)})</span>` : ''}</div>` : ''}
+          <div class="paynow-hint">Include your Order ID in the payment reference.</div>
+        </div>`;
+    } else {
+      pnSection.innerHTML = '';
+    }
+
+    // Reset status badge
+    setStatusBadge('pending');
 
     goToStep(4);
   } finally {
@@ -1425,14 +1754,65 @@ async function submitOrder() {
 function closeAndReset() {
   // Full reset including name/phone (explicit "Back to Menu" action)
   _resetOrderState();
-  document.getElementById('inp-name').value  = '';
-  document.getElementById('inp-phone').value = '';
+  // Re-populate from session (don't wipe verified user's details)
+  const phone = sessionStorage.getItem('verified_phone') || '';
+  const name  = sessionStorage.getItem('verified_name')  || '';
+  document.getElementById('inp-name').value  = name;
+  document.getElementById('inp-phone').value = phone;
   closeOrderPanel(); // step is now 1, so closeOrderPanel won't re-trigger reset
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ORDER STATUS
+// ═══════════════════════════════════════════════════════════════════════════════
+const STATUS_LABELS = {
+  pending:   '⏳ Pending',
+  active:    '✅ Confirmed',
+  completed: '🎉 Completed',
+  cancelled: '❌ Cancelled',
+};
+const STATUS_CLASSES = {
+  pending:   'status-pending',
+  active:    'status-active',
+  completed: 'status-completed',
+  cancelled: 'status-cancelled',
+};
+
+function setStatusBadge(status) {
+  const badge = document.getElementById('order-status-badge');
+  if (!badge) return;
+  badge.textContent = STATUS_LABELS[status] || status;
+  badge.className   = 'order-status-badge ' + (STATUS_CLASSES[status] || '');
+}
+
+async function refreshOrderStatus() {
+  const orderId = state.currentOrderId;
+  if (!orderId || orderId.startsWith('DEMO-') || !CONFIG.apiUrl) return;
+  const btn = document.querySelector('.status-refresh-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const res = await apiGet({ action: 'getOrderStatus', orderId });
+    if (res?.status) setStatusBadge(res.status);
+  } catch (e) {
+    showToast('Could not refresh status');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Refresh'; }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // UTILS
 // ═══════════════════════════════════════════════════════════════════════════════
+function normalizePhotoUrl(url) {
+  if (!url) return '';
+  // Google Drive share link → direct image URL
+  let m = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) return `https://lh3.googleusercontent.com/d/${m[1]}`;
+  m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m && url.includes('drive.google.com')) return `https://lh3.googleusercontent.com/d/${m[1]}`;
+  return url;
+}
+
 function esc(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

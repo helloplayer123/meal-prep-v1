@@ -129,8 +129,35 @@
       border-bottom: 1px solid var(--border); background: var(--bg);
     }
     .data-table td { padding: 12px 14px; font-size: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    .data-table tr:last-child td { border-bottom: none; }
-    .data-table tr:hover td { background: var(--bg); }
+    .data-table tr.order-main-row { cursor: pointer; }
+    .data-table tr.order-main-row:hover td { background: var(--bg); }
+    .data-table tr.order-detail-row td { padding: 0; border-bottom: 1px solid var(--border); }
+    .order-detail-panel {
+      display: none; padding: 16px 20px; background: var(--bg);
+      border-top: 1.5px solid var(--border);
+    }
+    .order-detail-panel.open { display: block; }
+    .order-detail-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
+    }
+    .order-detail-section { }
+    .order-detail-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.04em; color: var(--muted); margin-bottom: 6px;
+    }
+    .order-comment-box {
+      background: var(--surface); border: 1.5px solid var(--green);
+      border-left-width: 4px; border-radius: 8px;
+      padding: 10px 14px; font-size: 14px; color: var(--fg); line-height: 1.5;
+    }
+    .order-comment-empty {
+      font-size: 13px; color: var(--muted); font-style: italic;
+    }
+    .order-row-chevron {
+      font-size: 11px; color: var(--muted); transition: transform 0.2s;
+      display: inline-block;
+    }
+    .order-row-chevron.open { transform: rotate(180deg); }
 
     /* ── BADGES ────────────────────────────────────────────────────────────── */
     .badge { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 12px; font-weight: 600; }
@@ -138,6 +165,18 @@
     .badge-red    { background: var(--red-lt);   color: var(--red);   }
     .badge-amber  { background: #FEF3E2;          color: #B45309;      }
     .badge-blue   { background: #EEF2FF;          color: #3730A3;      }
+
+    /* ── ORDER ACTION BUTTONS ─────────────────────────────────────────────── */
+    .btn-action {
+      font-size: 12px; font-weight: 600; border-radius: 6px;
+      padding: 4px 10px; border: none; cursor: pointer; margin: 2px;
+    }
+    .btn-approve  { background: var(--green-lt); color: var(--green); }
+    .btn-approve:hover { background: var(--green); color: #fff; }
+    .btn-complete { background: #F0F0F0; color: #555; }
+    .btn-complete:hover { background: #555; color: #fff; }
+    .btn-cancel   { background: var(--red-lt); color: var(--red); }
+    .btn-cancel:hover { background: var(--red); color: #fff; }
 
     /* ── MACRO PREVIEW ─────────────────────────────────────────────────────── */
     .macro-preview { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -226,18 +265,49 @@
     .cat-toggle-btn.active { border-color: var(--green); background: var(--green-lt); color: var(--green); }
 
     /* ── DAY CHECKBOXES ─────────────────────────────────────────────────────── */
-    .day-checkboxes { display: flex; gap: 8px; flex-wrap: wrap; }
+    .day-checkboxes { display: flex; gap: 6px; flex-wrap: wrap; }
     .day-checkbox-label {
-      display: flex; align-items: center; gap: 5px;
+      display: flex; align-items: center; justify-content: center;
+      width: 44px; height: 44px;
       background: var(--bg); border: 1.5px solid var(--border);
-      border-radius: 7px; padding: 6px 10px;
-      cursor: pointer; font-size: 13px; font-weight: 500;
+      border-radius: 10px;
+      cursor: pointer; font-size: 13px; font-weight: 600;
       transition: border-color 0.15s, background 0.15s;
       user-select: none;
     }
-    .day-checkbox-label:hover { border-color: var(--green); }
+    .day-checkbox-label:hover { border-color: var(--green); background: var(--green-lt); }
     .day-checkbox-label input[type=checkbox] { display: none; }
-    .day-checkbox-label.checked { border-color: var(--green); background: var(--green-lt); color: var(--green); }
+    .day-checkbox-label.checked { border-color: var(--green); background: var(--green); color: #fff; }
+
+    /* ── LOCATIONS WEEKLY SCHEDULE ───────────────────────────────────────────── */
+    .loc-schedule-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+    .loc-sched-col { display: flex; flex-direction: column; gap: 6px; }
+    .loc-sched-header {
+      text-align: center; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; color: var(--muted);
+      letter-spacing: 0.04em; padding: 4px 0 6px;
+      border-bottom: 1.5px solid var(--border);
+    }
+    .loc-toggle-pill {
+      border-radius: 8px; font-size: 12px; font-weight: 600;
+      padding: 7px 6px; text-align: center; line-height: 1.2;
+      cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      user-select: none;
+    }
+    .loc-toggle-pill.on {
+      background: var(--green); color: #fff;
+      border: 1.5px solid var(--green);
+    }
+    .loc-toggle-pill.on:hover { background: var(--green-dk, #2d5228); border-color: var(--green-dk, #2d5228); }
+    .loc-toggle-pill.off {
+      background: var(--surface); color: var(--muted);
+      border: 1.5px solid var(--border);
+    }
+    .loc-toggle-pill.off:hover { border-color: var(--green); color: var(--green); background: var(--green-lt); }
 
     /* ── DISCOUNT TYPE TOGGLE ───────────────────────────────────────────────── */
     .discount-type-toggle { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -301,6 +371,7 @@
       <div class="nav-item" onclick="switchTab('shopping')"><span class="nav-icon">🛒</span> Shopping List</div>
       <div class="nav-item" onclick="switchTab('locations')"><span class="nav-icon">📍</span> Locations</div>
       <div class="nav-item" onclick="switchTab('customers')"><span class="nav-icon">👥</span> Customers</div>
+      <div class="nav-item" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span> Settings</div>
     </nav>
     <div class="nav-logout" onclick="doLogout()">⬅ Sign Out</div>
   </div>
@@ -313,15 +384,9 @@
       <div class="page-header">
         <div>
           <div class="page-title">Orders</div>
-          <div class="page-sub">View and manage customer orders</div>
+          <div class="page-sub">All active orders this cycle</div>
         </div>
-        <div class="date-range">
-          <label>From</label>
-          <input class="form-control" type="date" id="order-start" style="width:160px">
-          <label>To</label>
-          <input class="form-control" type="date" id="order-end" style="width:160px">
-          <button class="btn btn-primary" onclick="loadOrders()">Load</button>
-        </div>
+        <button class="btn btn-secondary" onclick="loadOrders()">↻ Refresh</button>
       </div>
 
       <div class="stats-grid" id="order-stats" style="display:none">
@@ -334,7 +399,7 @@
       <div class="card">
         <div class="card-body" style="padding:0">
           <div id="orders-table-wrap">
-            <div style="padding:40px;text-align:center;color:var(--muted)">Select a date range and click Load.</div>
+            <div style="padding:40px;text-align:center;color:var(--muted)">Loading orders…</div>
           </div>
         </div>
       </div>
@@ -419,6 +484,37 @@
       </div>
     </div>
 
+    <!-- ── SETTINGS TAB ─────────────────────────────────────────────────────── -->
+    <div class="tab-panel" id="tab-settings">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Settings</div>
+          <div class="page-sub">PayNow payment configuration</div>
+        </div>
+      </div>
+      <div class="card" style="max-width:520px">
+        <div class="card-body">
+          <h3 style="margin-bottom:16px;font-size:16px">💳 PayNow Details</h3>
+          <div class="form-group">
+            <label class="form-label">PayNow Number</label>
+            <input class="form-control" type="text" id="pn-number" placeholder="+65 9123 4567">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Display Name</label>
+            <input class="form-control" type="text" id="pn-name" placeholder="e.g. Aaron Meal Prep">
+          </div>
+          <div class="form-group">
+            <label class="form-label">QR Code Image URL</label>
+            <input class="form-control" type="url" id="pn-qr" placeholder="https://…">
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Upload your PayNow QR image to Google Drive (share publicly) and paste the link here.</div>
+          </div>
+          <div style="margin-top:20px">
+            <button class="btn btn-primary" onclick="savePayNow()">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /main-content -->
 </div><!-- /dashboard -->
 
@@ -437,7 +533,7 @@
 // CONFIG
 // ═══════════════════════════════════════════════════════════════════════════════
 const CONFIG = {
-  apiUrl:   'https://script.google.com/macros/s/AKfycbz_mgzQuu_LIrv8Y2VD4hYKe0MY1jCPNuru8qg0sSjarGp_BYCmDNcDrhGjTyU2j2is/exec',
+  apiUrl:   'https://script.google.com/macros/s/AKfycbyHkYeHpLGvFbesJXOijQSMHlR_7X6VHwUqOt2lVUVagzrHcSgVNavMYL5xRj1fGCc-/exec',
   symbol:   '$',
   currency: 'SGD',
 };
@@ -448,10 +544,12 @@ const CONFIG = {
 const MACROS = {
   protein: {
     'Chicken Breast':     {cal:165,p:31,c:0,  f:3.6},
+    'Chicken Thigh':      {cal:177,p:24,c:0,  f:9  },
     'Salmon':             {cal:208,p:20,c:0,  f:13 },
     'Tuna (Canned)':      {cal:132,p:28,c:0,  f:1  },
     'Tofu (Firm)':        {cal:76, p:8, c:2,  f:4  },
     'Eggs (Scrambled)':   {cal:155,p:13,c:1,  f:11 },
+    'Egg (Ajitama)':      {cal:150,p:12.5,c:2,f:10 },
     'Ground Beef (Lean)': {cal:215,p:26,c:0,  f:12 },
     'Shrimp':             {cal:99, p:24,c:0,  f:0.3},
     'Pork Tenderloin':    {cal:143,p:26,c:0,  f:4  },
@@ -634,8 +732,8 @@ function doLogout() {
 async function showDashboard() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
-  await Promise.all([loadMenu(), loadLocations(), loadCustomers()]);
   setDefaultDates();
+  await Promise.all([loadMenu(), loadLocations(), loadCustomers(), loadOrders(), loadPayNowConfig()]);
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -643,14 +741,15 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function setDefaultDates() {
+  // Pre-fill shopping list date range (orders tab no longer uses date filters)
   const today = new Date();
   const monday = new Date(today);
   monday.setDate(today.getDate() - today.getDay() + 1);
   const saturday = new Date(monday);
   saturday.setDate(monday.getDate() + 5);
   const fmt = d => d.toISOString().split('T')[0];
-  ['order-start','shop-start'].forEach(id => { const el=document.getElementById(id); if(el) el.value=fmt(monday); });
-  ['order-end','shop-end'].forEach(id => { const el=document.getElementById(id); if(el) el.value=fmt(saturday); });
+  ['shop-start'].forEach(id => { const el=document.getElementById(id); if(el) el.value=fmt(monday); });
+  ['shop-end'].forEach(id => { const el=document.getElementById(id); if(el) el.value=fmt(saturday); });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -661,6 +760,8 @@ function switchTab(name) {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   document.getElementById(`tab-${name}`).classList.add('active');
   event.currentTarget.classList.add('active');
+  if (name === 'orders')   loadOrders();
+  if (name === 'settings') loadPayNowConfig();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -993,62 +1094,208 @@ async function toggleDishActive(id, active) {
 // ORDERS
 // ═══════════════════════════════════════════════════════════════════════════════
 async function loadOrders() {
-  const start = document.getElementById('order-start').value;
-  const end   = document.getElementById('order-end').value;
   let orders;
-
   if (CONFIG.apiUrl) {
-    orders = await apiGet({ action:'getOrders', token, startDate:start, endDate:end });
+    orders = await apiGet({ action:'getOrders', token });
   } else {
     orders = DEMO_ORDERS;
   }
 
-  if (!Array.isArray(orders)) { showToast('Error loading orders'); return; }
+  if (!Array.isArray(orders)) { showToast('Error loading orders: ' + (orders?.error || 'unknown')); return; }
 
-  const totalMeals = orders.reduce((s,o) => {
-    const items = Array.isArray(o.items) ? o.items : JSON.parse(o.items||'[]');
+  // Show only non-completed, non-cancelled by default (active cycle)
+  const active = orders.filter(o => !['completed','cancelled'].includes(o.status));
+
+  const totalMeals = active.reduce((s,o) => {
+    const items = Array.isArray(o.items) ? o.items : (() => { try { return JSON.parse(o.items||'[]'); } catch(e) { return []; } })();
     return s + items.reduce((a,i) => a + Number(i.quantity||1), 0);
   }, 0);
-  const revenue = orders.reduce((s,o) => s + Number(o.total||0), 0);
-  document.getElementById('stat-orders').textContent  = orders.length;
+  const revenue = active.reduce((s,o) => s + Number(o.total||0), 0);
+  document.getElementById('stat-orders').textContent  = active.length;
   document.getElementById('stat-meals').textContent   = totalMeals;
   document.getElementById('stat-revenue').textContent = CONFIG.symbol + revenue.toFixed(2);
-  document.getElementById('stat-avg').textContent     = orders.length ? CONFIG.symbol + (revenue/orders.length).toFixed(2) : '—';
+  document.getElementById('stat-avg').textContent     = active.length ? CONFIG.symbol + (revenue/active.length).toFixed(2) : '—';
   document.getElementById('order-stats').style.display = 'grid';
 
   const wrap = document.getElementById('orders-table-wrap');
-  if (!orders.length) {
-    wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">No orders in this date range.</div>';
+  if (!active.length) {
+    wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">No active orders.</div>';
     return;
   }
+
+  const statusBadge = s => {
+    const map = {
+      pending:   ['#FFF8E6','#B8860B','⏳ Pending'],
+      active:    ['#EDF3EB','#3D6B35','✅ Confirmed'],
+      completed: ['#F0F0F0','#555','🎉 Completed'],
+      cancelled: ['#FDF0EF','#C0392B','❌ Cancelled'],
+    };
+    const [bg, color, label] = map[s] || ['#F0F0F0','#555', s];
+    return `<span style="display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:${bg};color:${color}">${label}</span>`;
+  };
+
+  const actionBtns = o => {
+    const s = o.status || 'pending';
+    const id = esc(o.orderId);
+    const btns = [];
+    if (s === 'pending')  btns.push(`<button class="btn-action btn-approve" onclick="changeOrderStatus('${id}','active')">Approve</button>`);
+    if (s === 'active')   btns.push(`<button class="btn-action btn-complete" onclick="changeOrderStatus('${id}','completed')">Complete</button>`);
+    if (s !== 'cancelled' && s !== 'completed') btns.push(`<button class="btn-action btn-cancel" onclick="changeOrderStatus('${id}','cancelled')">Cancel</button>`);
+    return btns.join(' ');
+  };
+
+  const fmtPickupDate = raw => {
+    if (!raw) return '—';
+    const s = String(raw);
+    // Handle ISO timestamp or plain date string
+    const d = new Date(s.includes('T') ? s : s + 'T00:00:00');
+    if (isNaN(d)) return s;
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${days[d.getDay()]} ${d.getDate()} ${mons[d.getMonth()]}`;
+  };
 
   wrap.innerHTML = `
     <table class="data-table">
       <thead><tr>
-        <th>Order ID</th><th>Customer</th><th>Items</th>
-        <th>Pickup Date</th><th>Location</th><th>Total</th><th>Status</th>
+        <th></th><th>Order ID</th><th>Customer</th><th>Items</th>
+        <th>Pickup</th><th>Location</th><th>Total</th><th>Status</th><th>Actions</th>
       </tr></thead>
       <tbody>
-        ${orders.map(o => {
-          const items = Array.isArray(o.items) ? o.items : JSON.parse(o.items||'[]');
-          const itemStr = items.map(i => `${i.dishName||'?'} ×${i.quantity}`).join(', ');
+        ${active.map(o => {
+          const items = Array.isArray(o.items) ? o.items : (() => { try { return JSON.parse(o.items||'[]'); } catch(e) { return []; } })();
+          const itemLines = items.map(i => {
+            const qty     = Number(i.quantity) || 1;
+            const effP    = Number(i.unitPrice) || 0;
+            const origP   = Number(i.origPrice) || effP;
+            const isCustom = Math.abs(effP - origP) > 0.001;
+            const priceTag = isCustom
+              ? `<span style="text-decoration:line-through;opacity:0.45">${CONFIG.symbol}${(origP*qty).toFixed(2)}</span> <span style="color:var(--green);font-weight:600">${CONFIG.symbol}${(effP*qty).toFixed(2)}</span>`
+              : `${CONFIG.symbol}${(effP*qty).toFixed(2)}`;
+            return `<div>${esc(i.dishName||'?')} ×${qty} — ${priceTag}</div>`;
+          }).join('');
           const discType  = o.discountType  || 'pct';
           const discValue = Number(o.discountValue) || 0;
-          const discLabel = discValue > 0 ? (discType === 'fixed' ? `$${discValue} off` : `${discValue}% disc.`) : '';
-          return `<tr>
+          const discLabel = discValue > 0 ? (discType === 'fixed' ? `${CONFIG.symbol}${discValue} off` : `${discValue}% disc.`) : '';
+          const hasComment = !!(o.comments && o.comments.trim());
+          const colSpan = 9;
+          // Detail panel — items breakdown + comments
+          const detailItems = items.map(i => {
+            const qty  = Number(i.quantity) || 1;
+            const effP = Number(i.unitPrice) || 0;
+            const origP = Number(i.origPrice) || effP;
+            const isCustom = Math.abs(effP - origP) > 0.001;
+            return `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px">
+              <span>${esc(i.dishName||'?')} <span style="color:var(--muted)">×${qty}</span></span>
+              <span>${isCustom
+                ? `<span style="text-decoration:line-through;opacity:0.4;margin-right:6px">${CONFIG.symbol}${(origP*qty).toFixed(2)}</span><strong style="color:var(--green)">${CONFIG.symbol}${(effP*qty).toFixed(2)}</strong>`
+                : `<strong>${CONFIG.symbol}${(effP*qty).toFixed(2)}</strong>`}
+              </span>
+            </div>`;
+          }).join('');
+          return `
+          <tr class="order-main-row" onclick="toggleOrderDetail('${esc(o.orderId)}')" id="order-row-${esc(o.orderId)}">
+            <td style="width:28px;padding-right:0">
+              <span class="order-row-chevron" id="chev-${esc(o.orderId)}">▼</span>
+            </td>
             <td style="font-size:12px;font-family:monospace">${esc(o.orderId)}</td>
             <td><strong>${esc(o.name)}</strong><div style="font-size:12px;color:var(--muted)">${esc(o.phone)}</div></td>
-            <td style="font-size:13px">${esc(itemStr)}</td>
-            <td>${esc(o.pickupDate)}</td>
+            <td style="font-size:13px">
+              ${itemLines}
+              ${hasComment ? `<div style="margin-top:4px;font-size:11px;color:var(--green);font-weight:600">💬 Has note</div>` : ''}
+            </td>
+            <td style="white-space:nowrap">${fmtPickupDate(o.pickupDate)}</td>
             <td>${esc(o.pickupLocation)}</td>
             <td style="font-weight:700">${CONFIG.symbol}${Number(o.total).toFixed(2)}
               ${discLabel?`<div style="font-size:11px;color:var(--green)">${esc(discLabel)}</div>`:''}
             </td>
-            <td><span class="badge badge-green">${esc(o.status||'confirmed')}</span></td>
+            <td id="order-status-${esc(o.orderId)}">${statusBadge(o.status||'pending')}</td>
+            <td id="order-actions-${esc(o.orderId)}" onclick="event.stopPropagation()">${actionBtns(o)}</td>
+          </tr>
+          <tr class="order-detail-row">
+            <td colspan="${colSpan}">
+              <div class="order-detail-panel" id="detail-${esc(o.orderId)}">
+                <div class="order-detail-grid">
+                  <div class="order-detail-section">
+                    <div class="order-detail-label">Items</div>
+                    ${detailItems}
+                    ${discLabel ? `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:var(--green)"><span>Discount (${esc(discLabel)})</span><span>−${CONFIG.symbol}${Number(o.discountAmt||0).toFixed(2)}</span></div>` : ''}
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1.5px solid var(--border);font-weight:700;font-size:13px"><span>Total</span><span>${CONFIG.symbol}${Number(o.total).toFixed(2)}</span></div>
+                  </div>
+                  <div class="order-detail-section">
+                    <div class="order-detail-label">Pickup Details</div>
+                    <div style="font-size:13px;margin-bottom:4px">📅 ${fmtPickupDate(o.pickupDate)}</div>
+                    <div style="font-size:13px">📍 ${esc(o.pickupLocation)}</div>
+                  </div>
+                  <div class="order-detail-section">
+                    <div class="order-detail-label">Customer Comments</div>
+                    ${hasComment
+                      ? `<div class="order-comment-box">${esc(o.comments)}</div>`
+                      : `<div class="order-comment-empty">No comments for this order.</div>`}
+                  </div>
+                </div>
+              </div>
+            </td>
           </tr>`;
         }).join('')}
       </tbody>
     </table>`;
+}
+
+function toggleOrderDetail(orderId) {
+  const panel = document.getElementById(`detail-${orderId}`);
+  const chev  = document.getElementById(`chev-${orderId}`);
+  if (!panel) return;
+  const isOpen = panel.classList.toggle('open');
+  if (chev) chev.classList.toggle('open', isOpen);
+}
+
+async function changeOrderStatus(orderId, newStatus) {
+  if (!CONFIG.apiUrl) { showToast('API not configured'); return; }
+  try {
+    const res = await apiPost({ action:'updateOrderStatus', token, orderId, status: newStatus });
+    if (res?.error) { showToast('Error: ' + res.error); return; }
+    showToast(`Order ${orderId} → ${newStatus}`);
+    // Refresh the table to reflect new state
+    await loadOrders();
+  } catch(e) {
+    showToast('Could not update order status');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PAYNOW CONFIG
+// ═══════════════════════════════════════════════════════════════════════════════
+async function loadPayNowConfig() {
+  if (!CONFIG.apiUrl) return;
+  try {
+    const res = await apiGet({ action: 'getPayNowConfig' });
+    if (res && !res.error) {
+      document.getElementById('pn-number').value = res.number || '';
+      document.getElementById('pn-name').value   = res.name   || '';
+      document.getElementById('pn-qr').value     = res.qrUrl  || '';
+    }
+  } catch(e) { /* no-op on load */ }
+}
+
+async function savePayNow() {
+  const number = document.getElementById('pn-number').value.trim();
+  const name   = document.getElementById('pn-name').value.trim();
+  const qrUrl  = document.getElementById('pn-qr').value.trim();
+  if (!CONFIG.apiUrl) { showToast('API not configured'); return; }
+  const btn = document.querySelector('#tab-settings .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  try {
+    const res = await apiPost({ action: 'setPayNowConfig', token, number, name, qrUrl });
+    if (res?.error) { showToast('Error: ' + res.error); return; }
+    showToast('PayNow settings saved ✓');
+    // Reload to confirm server-side values match
+    await loadPayNowConfig();
+  } catch(e) {
+    showToast('Could not save: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1145,92 +1392,91 @@ async function loadLocations() {
   renderLocationsTable();
 }
 
+function parseAvailDays(avail) {
+  if (!avail) return new Set();
+  const str = String(avail);
+  if (/^[\d,\s]+$/.test(str)) {
+    const s = new Set();
+    str.split(',').forEach(d => { const n = parseInt(d.trim(), 10); if (!isNaN(n) && n >= 0 && n <= 6) s.add(n); });
+    return s;
+  }
+  return new Set();
+}
+
 function renderLocationsTable() {
   const wrap = document.getElementById('locations-table-wrap');
   if (!locData.length) {
-    wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">No locations yet.</div>';
+    wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">No locations yet. Add one above.</div>';
     return;
   }
-  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const formatDays = (avail) => {
-    if (!avail) return '—';
-    const str = String(avail);
-    if (/^[\d,\s]+$/.test(str)) {
-      return str.split(',').map(d => dayNames[parseInt(d.trim(),10)]).filter(Boolean).join(', ');
-    }
-    return str;
-  };
+
+  const DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const activeLocs = locData.filter(l => l.active === true || l.active === 'TRUE');
+
+  // 7-column grid: every combination of day × location as a toggleable pill
+  const schedCols = DAY_SHORT.map((dayName, dow) => {
+    const pills = activeLocs.map(l => {
+      const isOn = parseAvailDays(l.availableDays).has(dow);
+      return `<div class="loc-toggle-pill ${isOn ? 'on' : 'off'}"
+                   onclick="toggleLocDay('${l.id}', ${dow})"
+                   title="${esc(l.name)}">${esc(l.name)}</div>`;
+    }).join('');
+    return `<div class="loc-sched-col">
+      <div class="loc-sched-header">${dayName}</div>
+      ${pills || '<div style="min-height:8px"></div>'}
+    </div>`;
+  }).join('');
+
+  // Compact location legend with edit buttons
+  const locLegend = locData.map(l => {
+    const active = l.active === true || l.active === 'TRUE';
+    return `<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;${active?'':'opacity:0.45'}">
+      ${esc(l.name)}
+      <button onclick="openLocationModal('${l.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;line-height:1" title="Edit">✎</button>
+    </span>`;
+  }).join('');
+
   wrap.innerHTML = `
-    <table class="data-table">
-      <thead><tr><th>Name</th><th>Address</th><th>Available Days</th><th>Status</th><th>Actions</th></tr></thead>
-      <tbody>
-        ${locData.map(l => {
-          const active = l.active === true || l.active === 'TRUE';
-          return `<tr>
-            <td><strong>${esc(l.name)}</strong></td>
-            <td>${esc(l.address||'—')}</td>
-            <td>${esc(formatDays(l.availableDays))}</td>
-            <td><span class="badge ${active?'badge-green':'badge-red'}">${active?'Active':'Inactive'}</span></td>
-            <td><button class="btn btn-sm btn-secondary" onclick="openLocationModal('${l.id}')">Edit</button></td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>`;
+    <div style="padding:20px 20px 16px">
+      <div class="loc-schedule-grid">${schedCols}</div>
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);margin-right:4px">Locations:</span>
+        ${locLegend}
+      </div>
+    </div>`;
+}
+
+async function toggleLocDay(locId, dow) {
+  const loc = locData.find(l => l.id === locId);
+  if (!loc) return;
+  const days = parseAvailDays(loc.availableDays);
+  const wasOn = days.has(dow);
+  if (wasOn) days.delete(dow); else days.add(dow);
+  loc.availableDays = [0,1,2,3,4,5,6].filter(d => days.has(d)).join(',');
+  if (CONFIG.apiUrl) {
+    const res = await apiPost({ action: 'updateLocation', token, location: loc });
+    if (res?.error) { showToast('Error: ' + res.error); return; }
+  }
+  renderLocationsTable();
 }
 
 function openLocationModal(locId) {
   const loc = locId ? locData.find(l => l.id === locId) : null;
-  const existingDays = new Set();
-  if (loc?.availableDays) {
-    const str = String(loc.availableDays);
-    if (/^[\d,\s]+$/.test(str)) {
-      str.split(',').forEach(d => {
-        const n = parseInt(d.trim(), 10);
-        if (!isNaN(n)) existingDays.add(n);
-      });
-    }
-  }
-
-  const dayLabels = [
-    {n:1,lbl:'Mon'},{n:2,lbl:'Tue'},{n:3,lbl:'Wed'},
-    {n:4,lbl:'Thu'},{n:5,lbl:'Fri'},{n:6,lbl:'Sat'},{n:0,lbl:'Sun'}
-  ];
-
-  const dayCheckboxes = dayLabels.map(({n,lbl}) => {
-    const checked = existingDays.has(n);
-    return `<label class="day-checkbox-label${checked?' checked':''}" id="day-lbl-${n}" onclick="toggleDayCheck(${n})">
-      <input type="checkbox" id="day-chk-${n}"${checked?' checked':''}>
-      ${lbl}
-    </label>`;
-  }).join('');
-
   document.getElementById('modal-box').innerHTML = `
     <div class="modal-title">${loc ? 'Edit Location' : 'Add Pickup Location'}</div>
     <input type="hidden" id="loc-id" value="${esc(loc?.id||'')}">
     <div class="form-group"><label class="form-label">Location Name *</label>
-      <input class="form-control" id="loc-name" value="${esc(loc?.name||'')}" placeholder="e.g. Tanjong Pagar">
+      <input class="form-control" id="loc-name" value="${esc(loc?.name||'')}" placeholder="e.g. Shenton Way">
     </div>
     <div class="form-group"><label class="form-label">Address</label>
       <input class="form-control" id="loc-addr" value="${esc(loc?.address||'')}" placeholder="Full address">
     </div>
-    <div class="form-group">
-      <label class="form-label">Available Days</label>
-      <div class="day-checkboxes" id="day-checkboxes">${dayCheckboxes}</div>
-      <div class="form-hint">Select the days of the week this location is available for pickup.</div>
-    </div>
+    <div class="form-hint" style="margin-bottom:16px">Toggle available days directly on the schedule grid after saving.</div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveLocation()">${loc?'Save Changes':'Add Location'}</button>
     </div>`;
   openModal();
-}
-
-function toggleDayCheck(n) {
-  const chk = document.getElementById(`day-chk-${n}`);
-  const lbl = document.getElementById(`day-lbl-${n}`);
-  if (!chk || !lbl) return;
-  chk.checked = !chk.checked;
-  lbl.classList.toggle('checked', chk.checked);
 }
 
 async function saveLocation() {
@@ -1239,12 +1485,9 @@ async function saveLocation() {
   const addr = document.getElementById('loc-addr').value.trim();
   if (!name) { showToast('Location name is required'); return; }
 
-  const dayNums = [1,2,3,4,5,6,0];
-  const checkedDays = dayNums.filter(n => {
-    const chk = document.getElementById(`day-chk-${n}`);
-    return chk && chk.checked;
-  });
-  const availableDays = checkedDays.join(',');
+  // Preserve existing availableDays — days are managed via the schedule grid
+  const existingLoc = id ? locData.find(l => l.id === id) : null;
+  const availableDays = existingLoc ? (existingLoc.availableDays || '') : '';
 
   const loc = { id, name, address: addr, availableDays, active: true };
 
@@ -1296,7 +1539,7 @@ function renderCustomersTable() {
             <td>${esc(c.name||'—')}</td>
             <td>${esc(c.notes||'—')}</td>
             <td>${dvalue > 0 ? `<span class="badge badge-amber">${esc(discLabel)}</span>` : '—'}</td>
-            <td><button class="btn btn-sm btn-secondary" onclick="openCustomerModal('${esc(c.phone)}')">Edit</button></td>
+            <td><button class="btn btn-sm btn-secondary" onclick="openCustomerModal('${esc(String(c.phone).trim())}')">Edit</button></td>
           </tr>`;
         }).join('')}
       </tbody>
@@ -1387,7 +1630,8 @@ function setDiscountType(type) {
 }
 
 async function openCustomerModal(phone) {
-  const c = phone ? custData.find(x => x.phone === phone) : null;
+  const normPhone = p => String(p || '').trim();
+  const c = phone ? custData.find(x => normPhone(x.phone) === normPhone(phone)) : null;
 
   editingDiscountType  = c?.discountType || 'pct';
   editingCustomPricing = [];
@@ -1452,9 +1696,14 @@ async function openCustomerModal(phone) {
       </div>
     </div>
 
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveCustomer()">Save</button>
+    <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        ${c ? `<button class="btn" style="background:var(--red-lt);color:var(--red)" onclick="deleteCustomer('${esc(c.phone)}')">Delete Customer</button>` : ''}
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveCustomer()">Save</button>
+      </div>
     </div>`;
 
   openModal();
@@ -1501,6 +1750,19 @@ async function saveCustomer() {
   renderCustomersTable();
   closeModal();
   showToast('Customer saved');
+}
+
+async function deleteCustomer(phone) {
+  if (!confirm(`Delete customer ${phone}? This cannot be undone.`)) return;
+  if (CONFIG.apiUrl) {
+    const res = await apiPost({ action: 'deleteCustomer', token, phone });
+    if (res?.error) { showToast('Error: ' + res.error); return; }
+  }
+  const norm = p => String(p || '').trim();
+  custData = custData.filter(c => norm(c.phone) !== norm(phone));
+  renderCustomersTable();
+  closeModal();
+  showToast('Customer deleted');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
