@@ -306,15 +306,8 @@
       font-size: 18px; font-weight: 700; border-top: 1px solid var(--border);
       padding-top: 12px; margin-top: 8px;
     }
-    .summary-row.discount { color: var(--green); }
     .summary-custom-price {
       font-size: 11px; color: var(--amber); font-style: italic; margin-top: 1px;
-    }
-    .discount-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--green-lt); color: var(--green);
-      padding: 8px 12px; border-radius: 8px;
-      font-size: 13px; font-weight: 600; margin-bottom: 16px; width: 100%;
     }
 
     .pickup-detail {
@@ -658,8 +651,6 @@
       <div class="panel-title">Review &amp; Confirm</div>
       <div class="panel-sub">Double-check your order before placing.</div>
 
-      <div id="discount-badge-container"></div>
-
       <div class="summary-box" id="checkout-summary"><!-- populated by JS --></div>
 
       <div id="pickup-detail-boxes"><!-- populated by JS --></div>
@@ -999,7 +990,6 @@ let state = {
   cart:            [],
   customer:        { name: '', phone: '' },
   pickup:          { date: '', location: null },
-  discount:        null,
   customPricing:   [],
   currentStep:     1,
   maxStepReached:  1,
@@ -1443,11 +1433,10 @@ function openOrderPanel() {
 }
 
 // Shared state reset used by both "Back to Menu" and closing the panel from step 4.
-// Clears cart/discount/pickup and returns to step 1.
+// Clears cart/pickup and returns to step 1.
 // Intentionally keeps customer name & phone for repeat orders.
 function _resetOrderState() {
   state.cart            = [];
-  state.discount        = null;
   state.customPricing   = [];
   state.pickup          = { date: '', location: null };
   state.calWeekOffset   = 0;
@@ -1541,19 +1530,12 @@ async function goToStep3() {
   btn.disabled    = false;
   btn.textContent = 'Confirm Order';
 
-  // Clear any stale discount/pricing from a previous flow
-  state.discount      = null;
+  // Clear any stale pricing from a previous flow
   state.customPricing = [];
 
   try {
     if (CONFIG.apiUrl) {
-      const [discountRes, pricingRes] = await Promise.all([
-        apiGet({ action: 'checkDiscount', phone: state.customer.phone }),
-        apiGet({ action: 'getCustomPricing', phone: state.customer.phone }),
-      ]);
-      if (discountRes?.discount && discountRes.discount.discountValue > 0) {
-        state.discount = discountRes.discount;
-      }
+      const pricingRes = await apiGet({ action: 'getCustomPricing', phone: state.customer.phone });
       if (Array.isArray(pricingRes)) {
         state.customPricing = pricingRes;
       }
@@ -1612,31 +1594,7 @@ function renderCheckout() {
   state.cart.forEach(({ dish, quantity }) => {
     subtotal += getEffectivePrice(dish) * quantity;
   });
-
-  const discount = state.discount;
-  let discountAmt = 0;
-  if (discount && discount.discountValue > 0) {
-    if (discount.discountType === 'fixed') {
-      discountAmt = Math.min(Number(discount.discountValue), subtotal);
-    } else {
-      discountAmt = subtotal * Number(discount.discountValue) / 100;
-    }
-  }
-  const total = subtotal - discountAmt;
-
-  const badgeContainer = document.getElementById('discount-badge-container');
-  if (discount && discount.discountValue > 0) {
-    const label = discount.discountType === 'fixed'
-      ? `${CONFIG.symbol}${Number(discount.discountValue).toFixed(2)} off`
-      : `${discount.discountValue}% off`;
-    badgeContainer.innerHTML = `
-      <div class="discount-badge">
-        🎁 ${esc(discount.notes || label + ' applied')}
-        <span style="margin-left:auto;font-weight:700">−${CONFIG.symbol}${discountAmt.toFixed(2)}</span>
-      </div>`;
-  } else {
-    badgeContainer.innerHTML = '';
-  }
+  const total = subtotal;
 
   const summaryRows = state.cart.map(({ dish, quantity }) => {
     const effectivePrice = getEffectivePrice(dish);
@@ -1655,17 +1613,8 @@ function renderCheckout() {
       </div>`;
   }).join('');
 
-  let discountRowHtml = '';
-  if (discount && discount.discountValue > 0) {
-    const label = discount.discountType === 'fixed'
-      ? `Discount (${CONFIG.symbol}${Number(discount.discountValue).toFixed(2)} off)`
-      : `Discount (${discount.discountValue}%)`;
-    discountRowHtml = `<div class="summary-row discount"><span>${label}</span><span>−${CONFIG.symbol}${discountAmt.toFixed(2)}</span></div>`;
-  }
-
   document.getElementById('checkout-summary').innerHTML = `
     ${summaryRows}
-    ${discountRowHtml}
     <div class="summary-row total"><span>Total</span><span>${CONFIG.symbol}${total.toFixed(2)}</span></div>`;
 
   const fmtDate = iso => {
@@ -1709,17 +1658,7 @@ async function submitOrder() {
     state.cart.forEach(({ dish, quantity }) => {
       subtotal += getEffectivePrice(dish) * quantity;
     });
-
-    const discount = state.discount;
-    let discountAmt = 0;
-    if (discount && discount.discountValue > 0) {
-      if (discount.discountType === 'fixed') {
-        discountAmt = Math.min(Number(discount.discountValue), subtotal);
-      } else {
-        discountAmt = subtotal * Number(discount.discountValue) / 100;
-      }
-    }
-    const total = subtotal - discountAmt;
+    const total = subtotal;
 
     const orderComments = (document.getElementById('order-comments')?.value || state.comments || '').trim();
 
@@ -1736,9 +1675,6 @@ async function submitOrder() {
         origPrice:  Number(i.dish.price),
       })),
       subtotal,
-      discountType:  discount?.discountType  || 'pct',
-      discountValue: discount?.discountValue || 0,
-      discountAmt,
       total,
       comments:      orderComments,
     };
