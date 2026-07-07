@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Meal Prep Co.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #F7F5F2;
+      --surface:  #FFFFFF;
+      --border:   #E6E1D9;
+      --text:     #1C1C1C;
+      --muted:    #7A7870;
+      --green:    #3D6B35;
+      --green-lt: #EDF3EB;
+      --green-dk: #2E5228;
+      --amber:    #C4854A;
+      --red:      #C0392B;
+      --red-lt:   #FDF0EF;
+      --radius:   10px;
+      --shadow:   0 2px 10px rgba(0,0,0,0.07);
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; }
+    button { font-family: inherit; cursor: pointer; border: none; }
+    input, select, textarea { font-family: inherit; }
+    img { display: block; }
+
+    /* ── LOGIN SCREEN ──────────────────────────────────────────────────────── */
+    #login-screen {
+      min-height: 100vh; display: flex;
+      align-items: center; justify-content: center;
+    }
+    .login-card {
+      background: var(--surface); border-radius: 16px;
+      border: 1px solid var(--border); padding: 40px 36px;
+      width: 100%; max-width: 380px; box-shadow: var(--shadow);
+    }
+    .login-logo { font-size: 22px; font-weight: 700; color: var(--green); margin-bottom: 4px; }
+    .login-sub  { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+    .login-error { color: var(--red); font-size: 13px; margin-top: 8px; }
+
+    /* ── DASHBOARD ─────────────────────────────────────────────────────────── */
+    #dashboard { display: none; min-height: 100vh; }
+
+    /* sidebar */
+    .sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0; width: 220px;
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; z-index: 50;
+    }
+    .sidebar-logo { padding: 24px 20px 20px; font-size: 16px; font-weight: 700; color: var(--green); border-bottom: 1px solid var(--border); }
+    .sidebar-logo span { display: block; font-size: 11px; color: var(--muted); font-weight: 400; margin-top: 2px; }
+    .nav-list { padding: 12px 8px; flex: 1; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 8px; cursor: pointer;
+      font-size: 14px; font-weight: 500; color: var(--muted);
+      transition: background 0.15s, color 0.15s; margin-bottom: 2px;
+    }
+    .nav-item:hover { background: var(--bg); color: var(--text); }
+    .nav-item.active { background: var(--green-lt); color: var(--green); font-weight: 600; }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+    .nav-logout {
+      padding: 16px 20px; border-top: 1px solid var(--border);
+      font-size: 13px; color: var(--muted); cursor: pointer;
+    }
+    .nav-logout:hover { color: var(--red); }
+
+    /* main content */
+    .main-content { margin-left: 220px; padding: 32px; min-height: 100vh; }
+    .page-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .page-title { font-size: 24px; font-weight: 700; letter-spacing: -0.3px; }
+    .page-sub   { font-size: 14px; color: var(--muted); margin-top: 2px; }
+
+    /* panels */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── SHARED COMPONENTS ─────────────────────────────────────────────────── */
+    .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); }
+    .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .card-title  { font-size: 15px; font-weight: 700; }
+    .card-body   { padding: 20px; }
+
+    .form-group  { margin-bottom: 16px; }
+    .form-label  { display: block; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .form-control {
+      width: 100%; padding: 10px 13px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 14px; color: var(--text); background: var(--surface);
+      outline: none; transition: border-color 0.15s;
+    }
+    .form-control:focus { border-color: var(--green); }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 9px 18px; border-radius: 8px;
+      font-size: 14px; font-weight: 600; border: none; cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .btn-sm { padding: 6px 12px; font-size: 13px; }
+    .btn-xs { padding: 4px 8px; font-size: 12px; }
+    .btn-primary   { background: var(--green); color: #fff; }
+    .btn-primary:hover { background: var(--green-dk); }
+    .btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
+    .btn-secondary:hover { background: var(--border); }
+    .btn-danger    { background: var(--red-lt); color: var(--red); border: 1px solid #f5c6c3; }
+    .btn-danger:hover { background: #fbe0de; }
+    .btn-amber     { background: #FEF3E2; color: #B45309; border: 1px solid #fde3b8; font-size: 12px; padding: 5px 10px; }
+    .btn-amber:hover { background: #fde3b8; }
+    .btn:disabled  { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── TABLE ─────────────────────────────────────────────────────────────── */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th {
+      text-align: left; padding: 10px 14px;
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.4px;
+      border-bottom: 1px solid var(--border); background: var(--bg);
+    }
+    .data-table td { padding: 12px 14px; font-size: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .data-table tr.order-main-row { cursor: pointer; }
+    .data-table tr.order-main-row:hover td { background: var(--bg); }
+    .data-table tr.order-detail-row td { padding: 0; border-bottom: 1px solid var(--border); }
+    .order-detail-panel {
+      display: none; padding: 16px 20px; background: var(--bg);
+      border-top: 1.5px solid var(--border);
+    }
+    .order-detail-panel.open { display: block; }
+    .order-detail-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
+    }
+    .order-detail-section { }
+    .order-detail-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.04em; color: var(--muted); margin-bottom: 6px;
+    }
+    .order-comment-box {
+      background: var(--surface); border: 1.5px solid var(--green);
+      border-left-width: 4px; border-radius: 8px;
+      padding: 10px 14px; font-size: 14px; color: var(--fg); line-height: 1.5;
+    }
+    .order-comment-empty {
+      font-size: 13px; color: var(--muted); font-style: italic;
+    }
+    .order-row-chevron {
+      font-size: 11px; color: var(--muted); transition: transform 0.2s;
+      display: inline-block;
+    }
+    .order-row-chevron.open { transform: rotate(180deg); }
+
+    /* ── BADGES ────────────────────────────────────────────────────────────── */
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 12px; font-weight: 600; }
+    .badge-green  { background: var(--green-lt); color: var(--green); }
+    .badge-red    { background: var(--red-lt);   color: var(--red);   }
+    .badge-amber  { background: #FEF3E2;          color: #B45309;      }
+    .badge-blue   { background: #EEF2FF;          color: #3730A3;      }
+
+    /* ── ORDER ACTION BUTTONS ─────────────────────────────────────────────── */
+    .btn-action {
+      font-size: 12px; font-weight: 600; border-radius: 6px;
+      padding: 4px 10px; border: none; cursor: pointer; margin: 2px;
+    }
+    .btn-approve  { background: var(--green-lt); color: var(--green); }
+    .btn-approve:hover { background: var(--green); color: #fff; }
+    .btn-complete { background: #F0F0F0; color: #555; }
+    .btn-complete:hover { background: #555; color: #fff; }
+    .btn-cancel   { background: var(--red-lt); color: var(--red); }
+    .btn-cancel:hover { background: var(--red); color: #fff; }
+
+    /* ── MACRO PREVIEW ─────────────────────────────────────────────────────── */
+    .macro-preview { display: flex; gap: 12px; flex-wrap: wrap; }
+    .macro-pill {
+      background: var(--bg); border-radius: 8px; padding: 8px 14px; text-align: center;
+    }
+    .macro-pill-val { font-size: 18px; font-weight: 700; }
+    .macro-pill-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── PHOTO UPLOAD ──────────────────────────────────────────────────────── */
+    .photo-drop {
+      border: 2px dashed var(--border); border-radius: 10px;
+      padding: 28px; text-align: center; cursor: pointer;
+      transition: border-color 0.15s; position: relative;
+    }
+    .photo-drop:hover { border-color: var(--green); }
+    .photo-drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .photo-drop-icon { font-size: 32px; margin-bottom: 8px; }
+    .photo-drop-text { font-size: 14px; color: var(--muted); }
+    .photo-preview { width: 100%; height: 160px; border-radius: 8px; object-fit: cover; margin-top: 10px; }
+
+    /* ── STATS CARDS ───────────────────────────────────────────────────────── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .stat-val { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+    .stat-lbl { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    /* ── SHOPPING LIST ─────────────────────────────────────────────────────── */
+    .shopping-section { margin-bottom: 24px; }
+    .shopping-section h3 { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+    .shopping-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+    }
+    .shopping-item:last-child { border-bottom: none; }
+    .shopping-item-name { font-size: 15px; font-weight: 500; }
+    .shopping-item-grams { font-size: 15px; font-weight: 700; color: var(--green); }
+    .shopping-item-portions { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ── MODAL ─────────────────────────────────────────────────────────────── */
+    #modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4); z-index: 300;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    #modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border-radius: 16px;
+      padding: 32px; width: 100%; max-width: 680px;
+      max-height: 90vh; overflow-y: auto;
+      animation: fadeScale 0.2s ease;
+    }
+    @keyframes fadeScale {
+      from { opacity: 0; transform: scale(0.96); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+    .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+
+    /* ── COMPONENT BUILDER ─────────────────────────────────────────────────── */
+    .component-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .component-row-item {
+      display: grid; grid-template-columns: 110px 1fr 80px 32px;
+      gap: 8px; align-items: center;
+    }
+    .component-row-item select,
+    .component-row-item input { font-size: 13px; padding: 7px 10px; }
+    .rm-comp-btn {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: var(--red-lt); color: var(--red);
+      border: 1px solid #f5c6c3; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .rm-comp-btn:hover { background: #fbe0de; }
+
+    /* ── CATEGORY TOGGLE (dish modal) ─────────────────────────────────────── */
+    .category-toggle { display: flex; gap: 8px; }
+    .cat-toggle-btn {
+      flex: 1; padding: 9px 12px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      border: 1.5px solid var(--border); background: var(--bg); color: var(--muted);
+      cursor: pointer; transition: all 0.15s; text-align: center;
+    }
+    .cat-toggle-btn:hover { border-color: var(--green); color: var(--green); }
+    .cat-toggle-btn.active { border-color: var(--green); background: var(--green-lt); color: var(--green); }
+
+    /* ── DAY CHECKBOXES ─────────────────────────────────────────────────────── */
+    .day-checkboxes { display: flex; gap: 6px; flex-wrap: wrap; }
+    .day-checkbox-label {
+      display: flex; align-items: center; justify-content: center;
+      width: 44px; height: 44px;
+      background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer; font-size: 13px; font-weight: 600;
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+    }
+    .day-checkbox-label:hover { border-color: var(--green); background: var(--green-lt); }
+    .day-checkbox-label input[type=checkbox] { display: none; }
+    .day-checkbox-label.checked { border-color: var(--green); background: var(--green); color: #fff; }
+
+    /* ── LOCATIONS WEEKLY SCHEDULE ───────────────────────────────────────────── */
+    .loc-schedule-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+    .loc-sched-col { display: flex; flex-direction: column; gap: 6px; }
+    .loc-sched-header {
+      text-align: center; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; color: var(--muted);
+      letter-spacing: 0.04em; padding: 4px 0 6px;
+      border-bottom: 1.5px solid var(--border);
+    }
+    .loc-toggle-pill {
+      border-radius: 8px; font-size: 12px; font-weight: 600;
+      padding: 7px 6px; text-align: center; line-height: 1.2;
+      cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      user-select: none;
+    }
+    .loc-toggle-pill.on {
+      background: var(--green); color: #fff;
+      border: 1.5px solid var(--green);
+    }
+    .loc-toggle-pill.on:hover { background: var(--green-dk, #2d5228); border-color: var(--green-dk, #2d5228); }
+    .loc-toggle-pill.off {
+      background: var(--surface); color: var(--muted);
+      border: 1.5px solid var(--border);
+    }
+    .loc-toggle-pill.off:hover { border-color: var(--green); color: var(--green); background: var(--green-lt); }
+
+    /* ── CUSTOM PRICING ROWS (3-layer) ─────────────────────────────────────── */
+    .custom-pricing-rows { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .custom-pricing-row {
+      display: grid; grid-template-columns: 130px 1fr 90px 32px;
+      gap: 8px; align-items: center;
+    }
+    .custom-pricing-row select,
+    .custom-pricing-row input { font-size: 13px; padding: 7px 10px; }
+
+    /* ── TOAST ─────────────────────────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #1C1C1C; color: #fff; padding: 12px 20px; border-radius: 10px;
+      font-size: 14px; font-weight: 500; opacity: 0; pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s; z-index: 999; white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── DATE RANGE ─────────────────────────────────────────────────────────── */
+    .date-range { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .date-range label { font-size: 13px; font-weight: 600; color: var(--muted); }
+    .date-range input { width: 160px; }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ────────────────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🥗 Meal Prep Co.</div>
+    <div class="login-sub">Admin Dashboard</div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-control" type="password" id="login-password"
+             placeholder="Enter admin password"
+             onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="doLogin()" id="login-btn">Sign In</button>
+    <div class="login-error" id="login-error" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ─────────────────────────────────────────────────────────────── -->
+<div id="dashboard">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">🥗 Meal Prep Co. <span>Admin</span></div>
+    <nav class="nav-list">
+      <div class="nav-item active" onclick="switchTab('orders')"><span class="nav-icon">📋</span> Orders</div>
+      <div class="nav-item" onclick="switchTab('menu')"><span class="nav-icon">🍱</span> Menu</div>
+      <div class="nav-item" onclick="switchTab('shopping')"><span class="nav-icon">🛒</span> Shopping List</div>
+      <div class="nav-item" onclick="switchTab('locations')"><span class="nav-icon">📍</span> Locations</div>
+      <div class="nav-item" onclick="switchTab('customers')"><span class="nav-icon">👥</span> Customers</div>
+      <div class="nav-item" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span> Settings</div>
+    </nav>
+    <div class="nav-logout" onclick="doLogout()">⬅ Sign Out</div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-content">
+
+    <!-- ── ORDERS TAB ─────────────────────────────────────────────────────── -->
+    <div class="tab-panel active" id="tab-orders">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Orders</div>
+          <div class="page-sub">All active orders this cycle</div>
+        </div>
+        <button class="btn btn-secondary" onclick="loadOrders()">↻ Refresh</button>
+      </div>
+
+      <div class="stats-grid" id="order-stats" style="display:none">
+        <div class="stat-card"><div class="stat-val" id="stat-orders">—</div><div class="stat-lbl">Total Orders</div></div>
+        <div class="stat-card"><div class="stat-val" id="stat-meals">—</div><div class="stat-lbl">Total Meals</div></div>
+        <div class="stat-card"><div class="stat-val" id="stat-revenue">—</div><div class="stat-lbl">Revenue</div></div>
+        <div class="stat-card"><div class="stat-val" id="stat-avg">—</div><div class="stat-lbl">Avg Order</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div id="orders-table-wrap">
+            <div style="padding:40px;text-align:center;color:var(--muted)">Loading orders…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-header" style="margin-top:32px">
+        <div>
+          <div class="page-title" style="font-size:18px">Completed Orders</div>
+          <div class="page-sub">Full history, grouped by pickup week</div>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="completed-stats" style="display:none">
+        <div class="stat-card"><div class="stat-val" id="stat-completed-orders">—</div><div class="stat-lbl">Total Completed Orders</div></div>
+        <div class="stat-card"><div class="stat-val" id="stat-completed-revenue">—</div><div class="stat-lbl">Total Completed Revenue</div></div>
+      </div>
+
+      <div id="completed-orders-wrap">
+        <div style="padding:40px;text-align:center;color:var(--muted)">Loading…</div>
+      </div>
+    </div>
+
+    <!-- ── MENU TAB ───────────────────────────────────────────────────────── -->
+    <div class="tab-panel" id="tab-menu">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Menu Management</div>
+          <div class="page-sub">Add, edit or deactivate dishes</div>
+        </div>
+        <button class="btn btn-primary" onclick="openDishModal()">+ Add Dish</button>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div id="menu-table-wrap">
+            <div style="padding:40px;text-align:center;color:var(--muted)">Loading menu…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SHOPPING LIST TAB ──────────────────────────────────────────────── -->
+    <div class="tab-panel" id="tab-shopping">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Shopping List</div>
+          <div class="page-sub">Aggregated ingredients needed for a date range</div>
+        </div>
+        <div class="date-range">
+          <label>From</label>
+          <input class="form-control" type="date" id="shop-start" style="width:160px">
+          <label>To</label>
+          <input class="form-control" type="date" id="shop-end" style="width:160px">
+          <button class="btn btn-primary" onclick="loadShoppingList()">Generate</button>
+          <button class="btn btn-secondary" onclick="printShoppingList()">🖨 Print</button>
+        </div>
+      </div>
+      <div id="shopping-content">
+        <div class="card">
+          <div class="card-body" style="text-align:center;color:var(--muted);padding:40px">
+            Select a date range and click Generate.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LOCATIONS TAB ──────────────────────────────────────────────────── -->
+    <div class="tab-panel" id="tab-locations">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Pickup Locations</div>
+          <div class="page-sub">Manage pickup points</div>
+        </div>
+        <button class="btn btn-primary" onclick="openLocationModal()">+ Add Location</button>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div id="locations-table-wrap">
+            <div style="padding:40px;text-align:center;color:var(--muted)">Loading…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CUSTOMERS TAB ──────────────────────────────────────────────────── -->
+    <div class="tab-panel" id="tab-customers">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Customers</div>
+          <div class="page-sub">Add notes and custom pricing to phone numbers</div>
+        </div>
+        <button class="btn btn-primary" onclick="openCustomerModal()">+ Add / Edit Customer</button>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div id="customers-table-wrap">
+            <div style="padding:40px;text-align:center;color:var(--muted)">Loading…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SETTINGS TAB ─────────────────────────────────────────────────────── -->
+    <div class="tab-panel" id="tab-settings">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Settings</div>
+          <div class="page-sub">PayNow payment configuration</div>
+        </div>
+      </div>
+      <div class="card" style="max-width:520px">
+        <div class="card-body">
+          <h3 style="margin-bottom:16px;font-size:16px">💳 PayNow Details</h3>
+          <div class="form-group">
+            <label class="form-label">PayNow Number</label>
+            <input class="form-control" type="text" id="pn-number" placeholder="9123 4567" inputmode="numeric">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Display Name</label>
+            <input class="form-control" type="text" id="pn-name" placeholder="e.g. Aaron Meal Prep">
+          </div>
+          <div class="form-group">
+            <label class="form-label">QR Code Image URL</label>
+            <input class="form-control" type="url" id="pn-qr" placeholder="https://…">
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Upload your PayNow QR image to Google Drive (share publicly) and paste the link here.</div>
+          </div>
+          <div style="margin-top:20px">
+            <button class="btn btn-primary" onclick="savePayNow()">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /dashboard -->
+
+<!-- ── MODAL ─────────────────────────────────────────────────────────────────── -->
+<div id="modal-overlay" onclick="handleModalOverlay(event)">
+  <div class="modal" id="modal-box">
+    <!-- populated by JS -->
+  </div>
+</div>
+
+<!-- ── TOAST ─────────────────────────────────────────────────────────────────── -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════════════════════
+const CONFIG = {
+  apiUrl:   'https://script.google.com/macros/s/AKfycbx2SCl478hBgGKteAHQoej1XtkG4HwN8GPq-tG2eFVxWZ4mq0gIx40mp6KT_MDfLmkk/exec',
+  symbol:   '$',
+  currency: 'SGD',
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MACRO DATABASE (same as index.html)
+// ═══════════════════════════════════════════════════════════════════════════════
+const MACROS = {
+  protein: {
+    'Chicken Breast':     {cal:165,p:31,c:0,  f:3.6},
+    'Chicken Thigh':      {cal:177,p:24,c:0,  f:9  },
+    'Salmon':             {cal:208,p:20,c:0,  f:13 },
+    'Tuna (Canned)':      {cal:132,p:28,c:0,  f:1  },
+    'Tofu (Firm)':        {cal:76, p:8, c:2,  f:4  },
+    'Eggs (Scrambled)':   {cal:155,p:13,c:1,  f:11 },
+    'Egg (Ajitama)':      {cal:150,p:12.5,c:2,f:10 },
+    'Tamagoyaki':         {cal:145,p:10.5,c:5,f:9.5},
+    'Ground Beef (Lean)': {cal:215,p:26,c:0,  f:12 },
+    'Shrimp':             {cal:99, p:24,c:0,  f:0.3},
+    'Pork Tenderloin':    {cal:143,p:26,c:0,  f:4  },
+    'Turkey Breast':      {cal:135,p:30,c:0,  f:1  },
+    'Tempeh':             {cal:193,p:19,c:9,  f:11 },
+    'Pork Spare Ribs':    {cal:280,p:18,c:0,  f:22 },
+    'Pork Belly':         {cal:518,p:9, c:0,  f:53 },
+  },
+  carb: {
+    'Brown Rice':           {cal:111,p:2.6,c:23,f:0.9},
+    'Japanese White Rice':  {cal:130,p:2.7,c:28,f:0.3},
+    'Thai Jasmine Rice':    {cal:129,p:2.7,c:27,f:0.3},
+    'Basmati Rice':         {cal:121,p:2.7,c:25,f:0.4},
+    'Quinoa':               {cal:120,p:4.4,c:22,f:1.9},
+    'Sweet Potato':         {cal:86, p:1.6,c:20,f:0.1},
+    'Oats':                 {cal:389,p:17, c:66,f:7  },
+    'Pasta (Whole Wheat)':  {cal:124,p:5.3,c:27,f:0.5},
+    'Potato':               {cal:77, p:2,  c:17,f:0.1},
+    'Cauliflower Rice':     {cal:25, p:1.9,c:5, f:0.3},
+  },
+  fiber: {
+    'Broccoli':    {cal:34,p:2.8,c:7,  f:0.4},
+    'Spinach':     {cal:23,p:2.9,c:3.6,f:0.4},
+    'Asparagus':   {cal:20,p:2.2,c:3.9,f:0.1},
+    'Green Beans': {cal:31,p:1.8,c:7,  f:0.1},
+    'Mixed Greens':{cal:20,p:1.5,c:3,  f:0.3},
+    'Cauliflower': {cal:25,p:1.9,c:5,  f:0.3},
+    'Zucchini':    {cal:17,p:1.2,c:3.1,f:0.3},
+    'Kale':        {cal:49,p:4.3,c:9,  f:0.9},
+    'Bell Pepper': {cal:31,p:1,  c:6,  f:0.3},
+    'Bok Choy':    {cal:13,p:1.5,c:2.2,f:0.2},
+  }
+};
+
+function calcMacrosFromComponents(comps) {
+  let cal=0,p=0,c=0,f=0;
+  comps.forEach(({category,type,grams}) => {
+    const ref = MACROS[category]?.[type];
+    if (ref && grams > 0) { const r=Number(grams)/100; cal+=ref.cal*r; p+=ref.p*r; c+=ref.c*r; f+=ref.f*r; }
+  });
+  return {calories:Math.round(cal),proteinG:Math.round(p),carbsG:Math.round(c),fatG:Math.round(f)};
+}
+
+function calcMacros(dish) {
+  return calcMacrosFromComponents(getDishComponents(dish));
+}
+
+function getDishComponents(dish) {
+  if (dish.components && typeof dish.components === 'string' && dish.components.trim().startsWith('[')) {
+    try {
+      const parsed = JSON.parse(dish.components);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch(e) {}
+  }
+  if (Array.isArray(dish.components) && dish.components.length > 0) return dish.components;
+  const comps = [];
+  if (dish.proteinType) comps.push({category:'protein',type:dish.proteinType,grams:Number(dish.proteinGrams)||0});
+  if (dish.carbType)    comps.push({category:'carb',   type:dish.carbType,   grams:Number(dish.carbGrams)   ||0});
+  if (dish.fiberType)   comps.push({category:'fiber',  type:dish.fiberType,  grams:Number(dish.fiberGrams)  ||0});
+  return comps;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════════
+let token    = sessionStorage.getItem('admin_token') || '';
+let menuData = [];
+let locData  = [];
+let custData = [];
+
+let editingComponents    = [];
+let editingCustomPricing = []; // [{dishCategory, dishId, dishName, customPrice}]
+let editingDishCategory  = 'full_meal';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DEMO DATA
+// ═══════════════════════════════════════════════════════════════════════════════
+const DEMO_MENU = [
+  {id:'d1',name:'Teriyaki Chicken Bowl',price:14.50,category:'full_meal',
+   description:'Tender glazed chicken over brown rice.',
+   photoUrl:'',proteinType:'Chicken Breast',proteinGrams:150,carbType:'Brown Rice',carbGrams:150,
+   fiberType:'Broccoli',fiberGrams:100,active:true,components:''},
+  {id:'d2',name:'Salmon & Quinoa',price:17.00,category:'full_meal',
+   description:'Pan-seared salmon with quinoa and asparagus.',
+   photoUrl:'',proteinType:'Salmon',proteinGrams:130,carbType:'Quinoa',carbGrams:120,
+   fiberType:'Asparagus',fiberGrams:100,active:true,components:''},
+  {id:'d3',name:'Pork Spare Ribs (200g)',price:12.00,category:'protein',
+   description:'Slow-braised pork spare ribs.',
+   photoUrl:'',proteinType:'Pork Spare Ribs',proteinGrams:200,carbType:'',carbGrams:0,
+   fiberType:'',fiberGrams:0,active:true,components:''},
+];
+const DEMO_LOCS = [
+  {id:'l1',name:'Tanjong Pagar',address:'1 Tanjong Pagar Plaza',availableDays:'3,4,5,6',active:true},
+  {id:'l2',name:'Tiong Bahru',address:'302 Tiong Bahru Rd',availableDays:'4,5,6',active:true},
+];
+const DEMO_ORDERS = [
+  {orderId:'ORD-DEMO1',timestamp:'2026-06-24T09:00:00Z',name:'Alice Tan',phone:'9111 2222',
+   pickupDate:'2026-06-27',pickupLocation:'Tanjong Pagar',
+   items:[{dishId:'d1',dishName:'Teriyaki Chicken Bowl',quantity:2,unitPrice:14.50}],
+   subtotal:29.00,total:29.00,status:'confirmed'},
+  {orderId:'ORD-DEMO2',timestamp:'2026-06-24T10:30:00Z',name:'Ben Lim',phone:'8222 3333',
+   pickupDate:'2026-06-28',pickupLocation:'Tiong Bahru',
+   items:[{dishId:'d2',dishName:'Salmon & Quinoa',quantity:1,unitPrice:17.00}],
+   subtotal:17.00,total:17.00,status:'confirmed'},
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════════════════════════════════════════
+async function apiGet(params) {
+  if (!CONFIG.apiUrl) return null;
+  try {
+    const url = CONFIG.apiUrl + '?' + new URLSearchParams(params);
+    const res = await fetchWithTimeout(url, { redirect: 'follow' });
+    return res.json();
+  } catch (e) { console.error('apiGet error:', e); return null; }
+}
+async function apiPost(body) {
+  if (!CONFIG.apiUrl) return null;
+  try {
+    const res = await fetchWithTimeout(CONFIG.apiUrl, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  } catch (e) { console.error('apiPost error:', e); return null; }
+}
+function fetchWithTimeout(url, opts = {}, ms = 15000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  return fetch(url, { ...opts, signal: controller.signal })
+    .finally(() => clearTimeout(id));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════════════════════
+async function doLogin() {
+  const pw  = document.getElementById('login-password').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  err.style.display = 'none';
+  if (!pw) { err.textContent = 'Enter a password'; err.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+
+  try {
+    if (CONFIG.apiUrl) {
+      const res = await apiPost({ action: 'adminLogin', password: pw });
+      if (!res) {
+        err.textContent = 'Could not reach server — check your apiUrl in CONFIG.'; err.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Sign In'; return;
+      }
+      if (res.error || !res.token) {
+        err.textContent = res.error || 'Invalid password'; err.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Sign In'; return;
+      }
+      token = res.token;
+      sessionStorage.setItem('admin_token', token);
+    } else {
+      token = 'demo-token';
+      sessionStorage.setItem('admin_token', token);
+    }
+    showDashboard();
+  } catch (e) {
+    err.textContent = 'Login failed: ' + e.message; err.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+}
+
+function doLogout() {
+  token = '';
+  sessionStorage.removeItem('admin_token');
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+async function showDashboard() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  setDefaultDates();
+  await Promise.all([loadMenu(), loadLocations(), loadCustomers(), loadOrders(), loadPayNowConfig()]);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (token) showDashboard();
+});
+
+function setDefaultDates() {
+  // Pre-fill shopping list date range (orders tab no longer uses date filters)
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - today.getDay() + 1);
+  const saturday = new Date(monday);
+  saturday.setDate(monday.getDate() + 5);
+  const fmt = d => d.toISOString().split('T')[0];
+  ['shop-start'].forEach(id => { const el=document.getElementById(id); if(el) el.value=fmt(monday); });
+  ['shop-end'].forEach(id => { const el=document.getElementById(id); if(el) el.value=fmt(saturday); });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (name === 'orders')   loadOrders();
+  if (name === 'settings') loadPayNowConfig();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MENU
+// ═══════════════════════════════════════════════════════════════════════════════
+async function loadMenu() {
+  let data;
+  if (CONFIG.apiUrl) {
+    data = await apiGet({ action: 'getAdminMenu', token });
+  } else {
+    data = DEMO_MENU;
+  }
+  menuData = Array.isArray(data) ? data : [];
+  renderMenuTable();
+}
+
+function renderMenuTable() {
+  const wrap = document.getElementById('menu-table-wrap');
+  if (!menuData.length) {
+    wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">No dishes yet. Add your first dish above.</div>';
+    return;
+  }
+
+  const catBadge = {
+    full_meal: '<span class="badge badge-green" style="font-size:11px">🍱 Full Meal</span>',
+    protein:   '<span class="badge badge-amber" style="font-size:11px">🥩 Protein</span>',
+  };
+
+  wrap.innerHTML = `
+    <table class="data-table">
+      <thead><tr>
+        <th>Dish</th><th>Category</th><th>Components</th>
+        <th>Macros (est.)</th><th>Price</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+        ${menuData.map(d => {
+          const m = calcMacros(d);
+          const active = d.active === true || d.active === 'TRUE';
+          const comps = getDishComponents(d);
+          const chipIcons = {protein:'🥩',carb:'🌾',fiber:'🥦'};
+          const compStr = comps.map(c => `${chipIcons[c.category]||''} ${esc(c.type)} ${c.grams}g`).join(' · ');
+          const cat = d.category || 'full_meal';
+          return `<tr>
+            <td><strong>${esc(d.name)}</strong>${d.description?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(d.description.substring(0,60))}${d.description.length>60?'…':''}</div>`:''}</td>
+            <td>${catBadge[cat] || catBadge['full_meal']}</td>
+            <td style="font-size:12px;color:var(--muted)">${compStr||'—'}</td>
+            <td style="white-space:nowrap">
+              <span style="font-weight:700">${m.calories} kcal</span>
+              <div style="font-size:11px;color:var(--muted)">${m.proteinG}g P · ${m.carbsG}g C · ${m.fatG}g F</div>
+            </td>
+            <td style="font-weight:700">$${Number(d.price).toFixed(2)}</td>
+            <td><span class="badge ${active?'badge-green':'badge-red'}">${active?'Active':'Inactive'}</span></td>
+            <td style="white-space:nowrap">
+              <button class="btn btn-sm btn-secondary" onclick="openDishModal('${d.id}')" style="margin-right:6px">Edit</button>
+              <button class="btn btn-sm btn-danger" onclick="toggleDishActive('${d.id}',${!active})">${active?'Deactivate':'Activate'}</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Component builder helpers ─────────────────────────────────────────────────
+
+function buildIngredientOptions(category, selected) {
+  return '<option value="">— select —</option>' +
+    Object.keys(MACROS[category] || {}).map(k =>
+      `<option value="${esc(k)}"${selected===k?' selected':''}>${esc(k)}</option>`
+    ).join('');
+}
+
+function renderComponentRows() {
+  const container = document.getElementById('component-rows');
+  if (!container) return;
+  container.innerHTML = editingComponents.map((comp, idx) => {
+    const catOptions = ['protein','carb','fiber'].map(c =>
+      `<option value="${c}"${comp.category===c?' selected':''}>${c}</option>`
+    ).join('');
+    return `
+      <div class="component-row-item" id="comp-row-${idx}">
+        <select class="form-control" onchange="updateCompCategory(${idx},this.value)">
+          ${catOptions}
+        </select>
+        <select class="form-control" onchange="updateCompType(${idx},this.value)">
+          ${buildIngredientOptions(comp.category, comp.type)}
+        </select>
+        <input class="form-control" type="number" min="1" max="1000" value="${comp.grams||100}"
+               placeholder="g" oninput="updateCompGrams(${idx},this.value)">
+        <button class="rm-comp-btn" onclick="removeComponent(${idx})" title="Remove">✕</button>
+      </div>`;
+  }).join('');
+  updateMacroPreview();
+}
+
+function updateCompCategory(idx, cat) {
+  editingComponents[idx].category = cat;
+  editingComponents[idx].type = '';
+  renderComponentRows();
+}
+function updateCompType(idx, type) {
+  editingComponents[idx].type = type;
+  updateMacroPreview();
+}
+function updateCompGrams(idx, val) {
+  editingComponents[idx].grams = Number(val) || 0;
+  updateMacroPreview();
+}
+function addComponent() {
+  editingComponents.push({ category: 'protein', type: '', grams: 100 });
+  renderComponentRows();
+}
+function removeComponent(idx) {
+  editingComponents.splice(idx, 1);
+  renderComponentRows();
+}
+function updateMacroPreview() {
+  const m = calcMacrosFromComponents(editingComponents);
+  const setEl = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  setEl('prev-cal', m.calories || '—');
+  setEl('prev-p',   m.proteinG ? m.proteinG + 'g' : '—');
+  setEl('prev-c',   m.carbsG   ? m.carbsG + 'g'   : '—');
+  setEl('prev-f',   m.fatG     ? m.fatG + 'g'     : '—');
+}
+
+function setDishCategory(cat) {
+  editingDishCategory = cat;
+  ['full_meal','protein'].forEach(c => {
+    const btn = document.getElementById(`cat-btn-${c}`);
+    if (btn) btn.classList.toggle('active', c === cat);
+  });
+}
+
+function suggestDesc() {
+  const comps = editingComponents.filter(c => c.type);
+  if (!comps.length) { showToast('Add some components first'); return; }
+
+  const proteins = comps.filter(c => c.category === 'protein').map(c => c.type);
+  const carbs    = comps.filter(c => c.category === 'carb').map(c => c.type);
+  const fibers   = comps.filter(c => c.category === 'fiber').map(c => c.type);
+
+  const andList = arr => arr.length > 1
+    ? arr.slice(0,-1).join(', ') + ' and ' + arr[arr.length-1]
+    : arr[0] || '';
+
+  const templates = [
+    () => {
+      const parts = [];
+      if (proteins.length) parts.push(andList(proteins));
+      if (carbs.length)    parts.push(andList(carbs));
+      if (fibers.length)   parts.push(`a side of ${andList(fibers)}`);
+      return `Freshly prepped ${parts.join(', ')}.`;
+    },
+    () => {
+      const p = proteins[0] || 'protein';
+      const c = carbs[0]    || 'grains';
+      const f = fibers[0]   || 'greens';
+      return `${p} over ${c}, served with ${f}. Clean ingredients, no fuss.`;
+    },
+    () => {
+      const all = comps.map(c => c.type);
+      return `A well-balanced meal with ${andList(all)}. Macro-tracked and freshly prepared.`;
+    },
+    () => {
+      const p = proteins[0] || 'protein';
+      const c = carbs[0];
+      const f = fibers[0];
+      const base = c ? `${p} over ${c}` : p;
+      const veg  = f ? ` with a portion of ${f}` : '';
+      return `${base}${veg}. Prepped fresh this week.`;
+    },
+  ];
+
+  const chosen = templates[Math.floor(Math.random() * templates.length)]();
+  const descEl = document.getElementById('d-desc');
+  if (descEl) descEl.value = chosen;
+}
+
+function openDishModal(dishId) {
+  const dish = dishId ? menuData.find(d => String(d.id) === String(dishId)) : null;
+  const isEdit = !!dish;
+
+  editingComponents    = dish ? getDishComponents(dish).map(c => ({...c})) : [];
+  editingDishCategory  = dish?.category || 'full_meal';
+
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-title">${isEdit ? 'Edit Dish' : 'Add New Dish'}</div>
+    <input type="hidden" id="dish-id" value="${esc(dish?.id||'')}">
+
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">Dish Name *</label>
+        <input class="form-control" id="d-name" value="${esc(dish?.name||'')}" placeholder="e.g. Chicken Rice Bowl">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Price (${CONFIG.currency}) *</label>
+        <input class="form-control" id="d-price" type="number" step="0.50" value="${dish?.price||''}" placeholder="14.50">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <div class="category-toggle">
+        <button class="cat-toggle-btn${editingDishCategory==='full_meal'?' active':''}" id="cat-btn-full_meal"
+                onclick="setDishCategory('full_meal')" type="button">🍱 Full Meal</button>
+        <button class="cat-toggle-btn${editingDishCategory==='protein'?' active':''}" id="cat-btn-protein"
+                onclick="setDishCategory('protein')" type="button">🥩 Protein</button>
+      </div>
+      <div class="form-hint">Full Meal = complete dish with carbs &amp; veg. Protein = standalone protein add-on.</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Description</span>
+        <button class="btn-amber" onclick="suggestDesc()" type="button" title="Generate a description from current components">✦ Suggest</button>
+      </label>
+      <textarea class="form-control" id="d-desc" rows="2" placeholder="Short description of the dish…">${esc(dish?.description||'')}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Photo URL</label>
+      <input class="form-control" id="d-photo" value="${esc(dish?.photoUrl||'')}" placeholder="https://… (paste a Google Drive share link or any image URL)">
+      <div class="form-hint">Use a publicly accessible image URL. In Google Drive: right-click → Share → Anyone with link, then copy the URL.</div>
+    </div>
+
+    <div style="background:var(--bg);border-radius:10px;padding:16px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Meal Components</div>
+        <button class="btn btn-sm btn-secondary" onclick="addComponent()" type="button">+ Add Component</button>
+      </div>
+      <div style="display:grid;grid-template-columns:110px 1fr 80px 32px;gap:8px;margin-bottom:6px">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;padding:0 4px">Category</div>
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;padding:0 4px">Ingredient</div>
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;padding:0 4px">Grams</div>
+        <div></div>
+      </div>
+      <div class="component-rows" id="component-rows"></div>
+      ${editingComponents.length === 0 ? `<div style="font-size:13px;color:var(--muted);padding:8px 0">No components yet. Click "+ Add Component" to start.</div>` : ''}
+    </div>
+
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Estimated Macros</div>
+      <div class="macro-preview" id="macro-preview">
+        <div class="macro-pill"><div class="macro-pill-val" id="prev-cal">—</div><div class="macro-pill-lbl">kcal</div></div>
+        <div class="macro-pill"><div class="macro-pill-val" id="prev-p">—</div><div class="macro-pill-lbl">protein</div></div>
+        <div class="macro-pill"><div class="macro-pill-val" id="prev-c">—</div><div class="macro-pill-lbl">carbs</div></div>
+        <div class="macro-pill"><div class="macro-pill-val" id="prev-f">—</div><div class="macro-pill-lbl">fat</div></div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveDish()">${isEdit?'Save Changes':'Add Dish'}</button>
+    </div>`;
+
+  openModal();
+  renderComponentRows();
+}
+
+async function saveDish() {
+  const id    = document.getElementById('dish-id').value.trim();
+  const name  = document.getElementById('d-name').value.trim();
+  const price = Number(document.getElementById('d-price').value);
+
+  if (!name)  { showToast('Dish name is required');  return; }
+  if (!price) { showToast('Price is required');       return; }
+
+  const m = calcMacrosFromComponents(editingComponents);
+
+  const firstProtein = editingComponents.find(c => c.category === 'protein');
+  const firstCarb    = editingComponents.find(c => c.category === 'carb');
+  const firstFiber   = editingComponents.find(c => c.category === 'fiber');
+
+  // Preserve the existing active status when editing; default true for new dishes
+  const existingDish = id ? menuData.find(d => String(d.id) === String(id)) : null;
+  const activeStatus = existingDish ? existingDish.active : true;
+
+  const dish = {
+    id,
+    category:     editingDishCategory || 'full_meal',
+    name,
+    description:  document.getElementById('d-desc').value.trim(),
+    price,
+    photoUrl:     document.getElementById('d-photo').value.trim(),
+    proteinType:  firstProtein?.type  || '',
+    proteinGrams: firstProtein?.grams || 0,
+    carbType:     firstCarb?.type     || '',
+    carbGrams:    firstCarb?.grams    || 0,
+    fiberType:    firstFiber?.type    || '',
+    fiberGrams:   firstFiber?.grams   || 0,
+    calories:     m.calories,
+    proteinG:     m.proteinG,
+    carbsG:       m.carbsG,
+    fatG:         m.fatG,
+    components:   editingComponents.filter(c => c.type),
+    active:       activeStatus,
+  };
+
+  if (CONFIG.apiUrl) {
+    const res = await apiPost({ action: id ? 'updateDish' : 'addDish', token, dish });
+    if (res?.error) { showToast('Error: ' + res.error); return; }
+    if (!id) dish.id = res.id;
+  } else {
+    if (!id) dish.id = 'demo-' + Date.now();
+  }
+
+  if (id) {
+    const idx = menuData.findIndex(d => String(d.id) === String(id));
+    if (idx !== -1) menuData[idx] = dish;
+  } else {
+    menuData.push(dish);
+  }
+
+  renderMenuTable();
+  closeModal();
+  showToast(id ? 'Dish updated' : 'Dish added');
+}
+
+async function toggleDishActive(id, active) {
+  const dish = menuData.find(d => String(d.id) === String(id));
+  if (!dish) return;
+  dish.active = active;
+  if (CONFIG.apiUrl) {
+    await apiPost({ action: 'updateDish', token, dish });
+  }
+  renderMenuTable();
+  showToast(active ? 'Dish activated' : 'Dish deactivated');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ORDERS
+// ═══════════════════════════════════════════════════════════════════════════════
+async function loadOrders() {
+  let orders;
+  if (CONFIG.apiUrl) {
+    orders = await apiGet({ action:'getOrders', token });
+  } else {
+    orders = DEMO_ORDERS;
+  }
+
+  if (!Array.isArray(orders)) { showToast('Error loading orders: ' + (orders?.error || 'unknown')); return; }
+
+  // Show only non-completed, non-cancelled by default (active cycle)
+  const active = orders.filter(o => !['completed','cancelled'].includes(o.status));
+
+  const totalMeals = active.reduce((s,o) => {
+    const items = Array.isArray(o.items) ? o.items : (() => { try { return JSON.parse(o.items||'[]'); } catch(e) { return []; } })();
+    return s + items.reduce((a,i) => a + Number(i.quantity||1), 0);
+  }, 0);
+  const revenue = active.reduce((s,o) => s + Number(o.total||0), 0);
+  document.getElementById('stat-orders').textContent  = active.length;
+  document.getElementById('stat-meals').textContent   = totalMeals;
+  document.getElementById('stat-revenue').textContent = CONFIG.symbol + revenue.toFixed(2);
+  document.getElementById('stat-avg').textContent     = active.length ? CONFIG.symbol + (revenue/active.length).toFixed(2) : '—';
+  document.getElementById('order-stats').style.display = 'grid';
+
+  const wrap = document.getElementById('orders-table-wrap');
+  if (!active.length) {
+    wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">No active orders.</div>';
+    return;
+  }
+
+  const statusBadge = s => {
+    const map = {
+      pending:   ['#FFF8E6','#B8860B','⏳ Pending'],
+      active:    ['#EDF3EB','#3D6B35','✅ Confirmed'],
+      completed: ['#F0F0F0','#555','🎉 Completed'],
+      cancelled: ['#FDF0EF','#C0392B','❌ Cancelled'],
+    };
+    const [bg, color, label] = map[s] || ['#F0F0F0','#555', s];
+    return `<span style="display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:${bg};color:${color}">${label}</span>`;
+  };
+
+  const actionBtns = o => {
+    const s = o.status || 'pending';
+    const id = esc(o.orderId);
+    const btns = [];
+    if (s === 'pending')  btns.push(`<button class="btn-action btn-approve" onclick="changeOrderStatus('${id}','active')">Approve</button>`);
+    if (s === 'active')   btns.push(`<button class="btn-action btn-complete" onclick="changeOrderStatus('${id}','completed')">Complete</button>`);
+    if (s !== 'cancelled' && s !== 'completed') btns.push(`<button class="btn-action btn-cancel" onclick="changeOrderStatus('${id}','cancelled')">Cancel</button>`);
+    return btns.join(' ');
+  };
+
+  const fmtPickupDate = raw => {
+    if (!raw) return '—';
+    const s = String(raw);
+    // Handle ISO timestamp or plain date string
+    const d = new Date(s.includes('T') ? s : s + 'T00:00:00');
+    if (isNaN(d)) return s;
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${days[d.getDay()]} ${d.getDate()} ${mons[d.getMonth()]}`;
+  };
+
+  wrap.innerHTML = `
+    <table class="data-table">
+      <thead><tr>
+        <th></th><th>Order ID</th><th>Customer</th><th>Items</th>
+        <th>Pickup</th><th>Location</th><th>Total</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+        ${active.map(o => {
+          const items = Array.isArray(o.items) ? o.items : (() => { try { return JSON.parse(o.items||'[]'); } catch(e) { return []; } })();
+          const itemLines = items.map(i => {
+            const qty     = Number(i.quantity) || 1;
+            const effP    = Number(i.unitPrice) || 0;
+            const origP   = Number(i.origPrice) || effP;
+            const isCustom = Math.abs(effP - origP) > 0.001;
+            const priceTag = isCustom
+              ? `<span style="text-decoration:line-through;opacity:0.45">${CONFIG.symbol}${(origP*qty).toFixed(2)}</span> <span style="color:var(--green);font-weight:600">${CONFIG.symbol}${(effP*qty).toFixed(2)}</span>`
+              : `${CONFIG.symbol}${(effP*qty).toFixed(2)}`;
+            return `<div>${esc(i.dishName||'?')} ×${qty} — ${priceTag}</div>`;
+          }).join('');
+          const hasComment = !!(o.comments && o.comments.trim());
+          const colSpan = 9;
+          // Detail panel — items breakdown + comments
+          const detailItems = items.map(i => {
+            const qty  = Number(i.quantity) || 1;
+            const effP = Number(i.unitPrice) || 0;
+            const origP = Number(i.origPrice) || effP;
+            const isCustom = Math.abs(effP - origP) > 0.001;
+            return `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px">
+              <span>${esc(i.dishName||'?')} <span style="color:var(--muted)">×${qty}</span></span>
+              <span>${isCustom
+                ? `<span style="text-decoration:line-through;opacity:0.4;margin-right:6px">${CONFIG.symbol}${(origP*qty).toFixed(2)}</span><strong style="color:var(--green)">${CONFIG.symbol}${(effP*qty).toFixed(2)}</strong>`
+                : `<strong>${CONFIG.symbol}${(effP*qty).toFixed(2)}</strong>`}
+              </span>
+            </div>`;
+          }).join('');
+          return `
+          <tr class="order-main-row" onclick="toggleOrderDetail('${esc(o.orderId)}')" id="order-row-${esc(o.orderId)}">
+            <td style="width:28px;padding-right:0">
+              <span class="order-row-chevron" id="chev-${esc(o.orderId)}">▼</span>
+            </td>
+            <td style="font-size:12px;font-family:monospace">${esc(o.orderId)}</td>
+            <td><strong>${esc(o.name)}</strong><div style="font-size:12px;color:var(--muted)">${esc(o.phone)}</div></td>
+            <td style="font-size:13px">
+              ${itemLines}
+              ${hasComment ? `<div style="margin-top:4px;font-size:11px;color:var(--green);font-weight:600">💬 Has note</div>` : ''}
+            </td>
+            <td style="white-space:nowrap">${fmtPickupDate(o.pickupDate)}</td>
+            <td>${esc(o.pickupLocation)}</td>
+            <td style="font-weight:700">${CONFIG.symbol}${Number(o.total).toFixed(2)}</td>
+            <td id="order-status-${esc(o.orderId)}">${statusBadge(o.status||'pending')}</td>
+            <td id="order-actions-${esc(o.orderId)}" onclick="event.stopPropagation()">${actionBtns(o)}</td>
+          </tr>
+          <tr class="order-detail-row">
+            <td colspan="${colSpan}">
+              <div class="order-detail-panel" id="detail-${esc(o.orderId)}">
+                <div class="order-detail-grid">
+                  <div class="order-detail-section">
+                    <div class="order-detail-label">Items</div>
+                    ${detailItems}
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1.5px solid var(--border);font-weight:700;font-size:13px"><span>Total</span><span>${CONFIG.symbol}${Number(o.total).toFixed(2)}</span></div>
+                  </div>
+                  <div class="order-detail-section">
+                    <div class="order-detail-label">Pickup Details</div>
+                    <div style="font-size:13px;margin-bottom:4px">📅 ${fmtPickupDate(o.pickupDate)}</div>
+                    <div style="font-size:13px">📍 ${esc(o.pickupLocation)}</div>
+                  </div>
+                  <div class="order-detail-section">
+                    <div class="order-detail-label">Customer Comments</div>
+                    ${hasComment
+                      ? `<div class="order-comment-box">${esc(o.comments)}</div>`
+                      : `<div class="order-comment-empty">No comments for this order.</div>`}
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function toggleOrderDetail(orderId) {
+  const panel = document.getElementById(`detail-${orderId}`);
+  const chev  = document.getElementById(`chev-${orderId}`);
+  if (!panel) return;
+  const isOpen = panel.classList.toggle('open');
+  if (chev) chev.classList.toggle('open', isOpen);
+}
+
+async function changeOrderStatus(orderId, newStatus) {
+  if (!CONFIG.apiUrl) { showToast('API not configured'); return; }
+  try {
+    const res = await apiPost({ action:'updateOrderStatus', token, orderId, status: newStatus });
+    if (res?.error) { showToast('Error: ' + res.error); return; }
+    showToast(`Order ${orderId} → ${newStatus}`);
+    // Refresh the table to reflect new state
+    await loadOrders();
+  } catch(e) {
+    showToast('Could not update order status');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PAYNOW CONFIG
+// ═══════════════════════════════════════════════════════════════════════════════
+async function loadPayNowConfig() {
+  if (!CONFIG.apiUrl) return;
+  try {
+    const res = await apiGet({ action: 'getPayNowConfig' });
+    if (res && !res.error) {
+      document.getElementById('pn-number').value = res.number || '';
+      document.getElementById('pn-name').value   = res.name   || '';
+      document.getElementById('pn-qr').value     = res.qrUrl  || '';
+    }
+  } catch(e) { /* no-op on load */ }
+}
+
+async function savePayNow() {
+  const number = document.getElementById('pn-number').value.trim();
+  const name   = document.getElementById('pn-name').value.trim();
+  const qrUrl  = document.getElementById('pn-qr').value.trim();
+  if (!CONFIG.apiUrl) { showToast('API not configured'); return; }
+  const btn = document.querySelector('#tab-settings .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  try {
+    const res = await apiPost({ action: 'setPayNowConfig', token, number, name, qrUrl });
+    if (res?.error) { showToast('Error: ' + res.error); return; }
+    showToast('PayNow settings saved ✓');
+    // Reload to confirm server-side values match
+    await loadPayNowConfig();
+  } catch(e) {
+    showToast('Could not save: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHOPPING LIST
+// ═══════════════════════════════════════════════════════════════════════════════
+async function loadShoppingList() {
+  const start = document.getElementById('shop-start').value;
+  const end   = document.getElementById('shop-end').value;
+
+  let result;
+  if (CONFIG.apiUrl) {
+    result = await apiGet({ action:'getShoppingList', token, startDate:start, endDate:end });
+  } else {
+    const menuMap = {};
+    DEMO_MENU.forEach(d => { menuMap[d.id] = d; });
+    const totals = {};
+    DEMO_ORDERS.forEach(o => {
+      o.items.forEach(item => {
+        const dish = menuMap[item.dishId]; if (!dish) return;
+        const qty = item.quantity;
+        const comps = getDishComponents(dish);
+        comps.forEach(({category,type,grams}) => {
+          if (!type) return;
+          const key = type+'::'+category;
+          if (!totals[key]) totals[key] = {name:type,category,totalGrams:0,portions:0};
+          totals[key].totalGrams += Number(grams)*qty;
+          totals[key].portions   += qty;
+        });
+      });
+    });
+    const catOrder = {protein:0,carb:1,fiber:2};
+    const list = Object.values(totals).sort((a,b) => catOrder[a.category] - catOrder[b.category]);
+    result = {list, totalOrders:3, orderCount:2, startDate:start, endDate:end};
+  }
+
+  if (!result?.list) { showToast('Error generating shopping list'); return; }
+
+  const byCategory = { protein: [], carb: [], fiber: [] };
+  result.list.forEach(item => { byCategory[item.category]?.push(item); });
+
+  const catLabels = { protein: '🥩 Proteins', carb: '🌾 Carbs', fiber: '🥦 Fiber & Veg' };
+  const sections = Object.entries(byCategory).filter(([,items]) => items.length).map(([cat, items]) => `
+    <div class="shopping-section">
+      <h3>${catLabels[cat]}</h3>
+      ${items.map(item => `
+        <div class="shopping-item">
+          <div>
+            <div class="shopping-item-name">${esc(item.name)}</div>
+            <div class="shopping-item-portions">${item.portions} portion${item.portions>1?'s':''}</div>
+          </div>
+          <div class="shopping-item-grams">${item.totalGrams}g</div>
+        </div>`).join('')}
+    </div>`).join('');
+
+  document.getElementById('shopping-content').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Shopping List</div>
+        <div style="font-size:13px;color:var(--muted)">${start} → ${end} · ${result.orderCount} orders · ${result.totalOrders} meals total</div>
+      </div>
+      <div class="card-body" id="shopping-printable">${sections}</div>
+    </div>`;
+}
+
+function printShoppingList() {
+  const content = document.getElementById('shopping-printable')?.innerHTML;
+  if (!content) { showToast('Generate a shopping list first'); return; }
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <html><head><title>Shopping List</title>
+    <style>
+      body{font-family:system-ui,sans-serif;padding:32px;max-width:600px;margin:0 auto}
+      h3{font-size:13px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:20px 0 8px;border-bottom:1px solid #eee;padding-bottom:6px}
+      .shopping-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0}
+      .shopping-item-name{font-weight:600}
+      .shopping-item-portions{font-size:12px;color:#888}
+      .shopping-item-grams{font-weight:700;color:#3D6B35}
+    </style></head>
+    <body><h1 style="font-size:20px;margin-bottom:4px">Shopping List</h1>
+    <p style="color:#888;margin-bottom:24px">Generated ${new Date().toLocaleDateString()}</p>
+    ${content}
+    <script>window.print();window.close();<\/script>
+    </body></html>`);
+  win.document.close();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOCATIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+async function loadLocations() {
+  locData = CONFIG.apiUrl
+    ? (await apiGet({ action:'getLocations' }) || DEMO_LOCS)
+    : DEMO_LOCS;
+  renderLocationsTable();
+}
+
+function parseAvailDays(avail) {
+  if (!avail) return new Set();
+  const str = String(avail);
+  if (/^[\d,\s]+$/.test(str)) {
+    const s = new Set();
+    str.split(',').forEach(d => { const n = parseInt(d.trim(), 10); if (!isNaN(n) && n >= 0 && n <= 6) s.add(n); });
+    return s;
+  }
+  return new Set();
+}
+
+function renderLocationsTable() {
+  const wrap = document.getElementById('locations-table-wrap');
+  if (!locData.length) {
+    wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">No locations yet. Add one above.</div>';
+    return;
+  }
+
+  const DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const activeLocs = locData.filter(l => l.active === true || l.active === 'TRUE');
+
+  // 7-column grid: every combination of day × location as a toggleable pill
+  const schedCols = DAY_SHORT.map((dayName, dow) => {
+    const pills = activeLocs.map(l => {
+      const isOn = parseAvailDays(l.availableDays).has(dow);
+      return `<div class="loc-toggle-pill ${isOn ? 'on' : 'off'}"
+                   onclick="toggleLocDay('${l.id}', ${dow})"
+                   title="${esc(l.name)}">${esc(l.name)}</div>`;
+    }).join('');
+    return `<div class="loc-sched-col">
+      <div class="loc-sched-header">${dayName}</div>
+      ${pills || '<div style="min-height:8px"></div>'}
+    </div>`;
+  }).join('');
+
+  // Compact location legend with edit buttons
+  const locLegend = locData.map(l => {
+    const active = l.active === true || l.active === 'TRUE';
+    return `<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;${active?'':'opacity:0.45'}">
+      ${esc(l.name)}
+      <button onclick="openLocationModal('${l.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;line-height:1" title="Edit">✎</button>
+    </span>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div style="padding:20px 20px 16px">
+      <div class="loc-schedule-grid">${schedCols}</div>
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);margin-right:4px">Locations:</span>
+        ${locLegend}
+      </div>
+    </div>`;
+}
+
+async function toggleLocDay(locId, dow) {
+  const loc = locData.find(l => l.id === locId);
+  if (!loc) return;
+  const days = parseAvailDays(loc.availableDays);
+  const wasOn = days.has(dow);
+  if (wasOn) days.delete(dow); else days.add(dow);
+  loc.availableDays = [0,1,2,3,4,5,6].filter(d => days.has(d)).join(',');
+  if (CONFIG.apiUrl) {
+    const res = await apiPost({ action: 'updateLocation', token, location: loc });
+    if (res?.error) { showToast('Error: ' + res.error); return; }
+  }
+  renderLocationsTable();
+}
+
+function openLocationModal(locId) {
+  const loc = locId ? locData.find(l => l.id === locId) : null;
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-title">${loc ? 'Edit Location' : 'Add Pickup Location'}</div>
+    <input type="hidden" id="loc-id" value="${esc(loc?.id||'')}">
+    <div class="form-group"><label class="form-label">Location Name *</label>
+      <input class="form-control" id="loc-name" value="${esc(loc?.name||'')}" placeholder="e.g. Shenton Way">
+    </div>
+    <div class="form-group"><label class="form-label">Address</label>
+      <input class="form-control" id="loc-addr" value="${esc(loc?.address||'')}" placeholder="Full address">
+    </div>
+    <div class="form-hint" style="margin-bottom:16px">Toggle available days directly on the schedule grid after saving.</div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLocation()">${loc?'Save Changes':'Add Location'}</button>
+    </div>`;
+  openModal();
+}
+
+async function saveLocation() {
+  const id   = document.getElementById('loc-id').value;
+  const name = document.getElementById('loc-name').value.trim();
+  const addr = document.getElementById('loc-addr').value.trim();
+  if (!name) { showToast('Location name is required'); return; }
+
+  // Preserve existing availableDays — days are managed via the schedule grid
+  const existingLoc = id ? locData.find(l => l.id === id) : null;
+  const availableDays = existingLoc ? (existingLoc.availableDays || '') : '';
+
+  const loc = { id, name, address: addr, availableDays, active: true };
+
+  if (CONFIG.apiUrl) {
+    const res = await apiPost({ action: id ? 'updateLocation' : 'addLocation', token, location: loc });
+    if (res?.error) { showToast('Error: ' + res.error); return; }
+    if (!id) loc.id = res.id;
+  } else {
+    if (!id) loc.id = 'loc-' + Date.now();
+  }
+  if (id) { const i = locData.findIndex(l => l.id === id); if (i !== -1) locData[i] = loc; }
+  else     locData.push(loc);
+  renderLocationsTable();
+  closeModal();
+  showToast(id ? 'Location updated' : 'Location added');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CUSTOMERS
+// ═══════════════════════════════════════════════════════════════════════════════
+async function loadCustomers() {
+  custData = CONFIG.apiUrl
+    ? (await apiGet({ action:'getAllCustomers', token }) || [])
+    : [
+        {phone:'9111 2222',name:'Alice Tan',notes:'Loyal customer'},
+        {phone:'8222 3333',name:'Ben Lim',notes:''},
+      ];
+  renderCustomersTable();
+}
+
+function renderCustomersTable() {
+  const wrap = document.getElementById('customers-table-wrap');
+  if (!custData.length) {
+    wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">No customers yet.</div>';
+    return;
+  }
+  wrap.innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Phone</th><th>Name</th><th>Notes</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${custData.map(c => `<tr>
+            <td style="font-family:monospace">${esc(c.phone)}</td>
+            <td>${esc(c.name||'—')}</td>
+            <td>${esc(c.notes||'—')}</td>
+            <td><button class="btn btn-sm btn-secondary" onclick="openCustomerModal('${esc(String(c.phone).trim())}')">Edit</button></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Custom pricing row helpers (3-layer) ──────────────────────────────────────
+
+/**
+ * Returns dishes filtered by category string.
+ * category = '' means all dishes; 'full_meal' or 'protein' filters accordingly.
+ */
+function getDishesByCategory(category) {
+  if (!category) return menuData;
+  return menuData.filter(d => (d.category || 'full_meal') === category);
+}
+
+function renderCustomPricingRows() {
+  const container = document.getElementById('custom-pricing-rows');
+  if (!container) return;
+  if (!editingCustomPricing.length) {
+    container.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:4px 0">No custom prices set.</div>';
+    return;
+  }
+  container.innerHTML = editingCustomPricing.map((row, idx) => {
+    const catOptions = [
+      `<option value=""${row.dishCategory===''?' selected':''}>All categories</option>`,
+      `<option value="full_meal"${row.dishCategory==='full_meal'?' selected':''}>🍱 Full Meal</option>`,
+      `<option value="protein"${row.dishCategory==='protein'?' selected':''}>🥩 Protein</option>`,
+    ].join('');
+
+    const filteredDishes = getDishesByCategory(row.dishCategory);
+    const dishOptions = [
+      `<option value=""${!row.dishId?' selected':''}>All items in category</option>`,
+      ...filteredDishes.map(d =>
+        `<option value="${esc(d.id)}"${d.id===row.dishId?' selected':''}>${esc(d.name)} — std $${Number(d.price).toFixed(2)}</option>`
+      )
+    ].join('');
+
+    return `
+      <div class="custom-pricing-row" id="cpr-${idx}">
+        <select class="form-control" onchange="updateCPRCategory(${idx},this.value)">
+          ${catOptions}
+        </select>
+        <select class="form-control" onchange="updateCPRDish(${idx},this.value)">
+          ${dishOptions}
+        </select>
+        <input class="form-control" type="number" step="0.50" min="0" value="${row.customPrice||''}"
+               placeholder="$Price" oninput="updateCPRPrice(${idx},this.value)">
+        <button class="rm-comp-btn" onclick="removeCPR(${idx})" title="Remove">✕</button>
+      </div>`;
+  }).join('');
+}
+
+function addCustomPricingRow() {
+  editingCustomPricing.push({ dishCategory: '', dishId: '', dishName: '', customPrice: '' });
+  renderCustomPricingRows();
+}
+
+function updateCPRCategory(idx, cat) {
+  editingCustomPricing[idx].dishCategory = cat;
+  editingCustomPricing[idx].dishId       = '';
+  editingCustomPricing[idx].dishName     = '';
+  renderCustomPricingRows();
+}
+
+function updateCPRDish(idx, dishId) {
+  const dish = menuData.find(d => d.id === dishId);
+  editingCustomPricing[idx].dishId   = dishId;
+  editingCustomPricing[idx].dishName = dish?.name || '';
+}
+
+function updateCPRPrice(idx, val) {
+  editingCustomPricing[idx].customPrice = val;
+}
+
+function removeCPR(idx) {
+  editingCustomPricing.splice(idx, 1);
+  renderCustomPricingRows();
+}
+
+async function openCustomerModal(phone) {
+  const normPhone = p => String(p || '').trim();
+  const c = phone ? custData.find(x => normPhone(x.phone) === normPhone(phone)) : null;
+
+  editingCustomPricing = [];
+
+  if (CONFIG.apiUrl && phone) {
+    const cpData = await apiGet({ action: 'getCustomPricing', phone });
+    if (Array.isArray(cpData)) {
+      editingCustomPricing = cpData.map(r => ({
+        dishCategory: r.dishCategory || '',
+        dishId:       r.dishId       || '',
+        dishName:     r.dishName     || '',
+        customPrice:  r.customPrice,
+      }));
+    }
+  }
+
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-title">${c ? 'Edit Customer' : 'Add Customer Note'}</div>
+    <input type="hidden" id="cust-phone-orig" value="${esc(c?.phone||'')}">
+    <div class="form-grid-2">
+      <div class="form-group"><label class="form-label">Phone *</label>
+        <input class="form-control" id="cust-phone" value="${esc(c?.phone||'')}" placeholder="9123 4567" inputmode="numeric">
+      </div>
+      <div class="form-group"><label class="form-label">Name</label>
+        <input class="form-control" id="cust-name" value="${esc(c?.name||'')}" placeholder="Customer name">
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label>
+      <textarea class="form-control" id="cust-notes" rows="2" placeholder="e.g. Loyal customer, bulk buyer…">${esc(c?.notes||'')}</textarea>
+    </div>
+
+    <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px">Custom Dish Pricing</div>
+        <button class="btn btn-sm btn-secondary" onclick="addCustomPricingRow()" type="button">+ Add</button>
+      </div>
+      <div style="display:grid;grid-template-columns:130px 1fr 90px 32px;gap:8px;margin-bottom:6px">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px">Category</div>
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px">Dish</div>
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px">Price</div>
+        <div></div>
+      </div>
+      <div class="custom-pricing-rows" id="custom-pricing-rows"></div>
+      <div class="form-hint" style="margin-top:8px">
+        Category blank = applies to all dishes. Dish blank = applies to all dishes in that category.
+        Exact dish match takes priority, then category, then wildcard.
+      </div>
+    </div>
+
+    <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        ${c ? `<button class="btn" style="background:var(--red-lt);color:var(--red)" onclick="deleteCustomer('${esc(c.phone)}')">Delete Customer</button>` : ''}
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveCustomer()">Save</button>
+      </div>
+    </div>`;
+
+  openModal();
+  renderCustomPricingRows();
+}
+
+// Canonicalize a phone number to a bare Singapore local number: digits only,
+// no +65/65/0065 country code prefix. All numbers are assumed to be SG numbers.
+function canonicalPhone(raw) {
+  let digits = String(raw || '').replace(/\D/g, '');
+  if (digits.length > 8) {
+    if (digits.startsWith('0065'))     digits = digits.slice(4);
+    else if (digits.startsWith('065')) digits = digits.slice(3);
+    else if (digits.startsWith('65'))  digits = digits.slice(2);
+  }
+  if (digits.length > 8) digits = digits.slice(-8);
+  return digits;
+}
+
+async function saveCustomer() {
+  const phone    = canonicalPhone(document.getElementById('cust-phone').value);
+  const name     = document.getElementById('cust-name').value.trim();
+  const notes    = document.getElementById('cust-notes').value.trim();
+  if (!phone) { showToast('Phone number is required'); return; }
+
+  if (CONFIG.apiUrl) {
+    const res = await apiPost({ action: 'upsertCustomer', token, phone, name, notes });
+    if (res?.error) { showToast('Error: ' + res.error); return; }
+
+    // Save custom pricing rows
+    for (const row of editingCustomPricing) {
+      if (row.customPrice === '' || row.customPrice === null || row.customPrice === undefined) continue;
+      await apiPost({
+        action: 'upsertCustomPricing', token,
+        phone,
+        dishCategory: row.dishCategory || '',
+        dishId:       row.dishId       || '',
+        dishName:     row.dishName     || '',
+        customPrice:  Number(row.customPrice),
+      });
+    }
+  }
+
+  const existing = custData.find(c => c.phone === phone);
+  if (existing) {
+    existing.name  = name;
+    existing.notes = notes;
+  } else {
+    custData.push({ phone, name, notes });
+  }
+  renderCustomersTable();
+  closeModal();
+  showToast('Customer saved');
+}
+
+async function deleteCustomer(phone) {
+  if (!confirm(`Delete customer ${phone}? This cannot be undone.`)) return;
+  if (CONFIG.apiUrl) {
+    const res = await apiPost({ action: 'deleteCustomer', token, phone });
+    if (res?.error) { showToast('Error: ' + res.error); return; }
+  }
+  const norm = p => String(p || '').trim();
+  custData = custData.filter(c => norm(c.phone) !== norm(phone));
+  renderCustomersTable();
+  closeModal();
+  showToast('Customer deleted');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════════════════════════════
+function openModal() {
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+function handleModalOverlay(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════════════════════
+function esc(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
