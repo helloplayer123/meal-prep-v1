@@ -553,7 +553,15 @@
 <section class="hero">
   <div class="hero-tag">🥗 Weekly Meal Prep</div>
   <h1 id="hero-title">Clean. Fresh.<br>Ready to Go.</h1>
-  <p id="hero-sub">Lorem Ipsum blah blah.</p>
+  <p id="hero-sub">
+    This started as a project to eat more healthily, and then I started cooking for some friends and family to minimise leftovers. <br>
+
+    It has grown, and along with it some dreams of where I can take this (one of my goals is to run a supper club once - stay tuned). <br>
+
+    In this current iteration, I really am excited to be sharing this part of that journey with you, in this series of meal-prepped food. <br>
+
+    I call this part of the journey, Cooked By Aaron. CB Aaron.
+  </p>
   <button class="hero-cta" onclick="scrollToMenu()">
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7"/></svg>
     See This Week's Menu
@@ -571,8 +579,8 @@
     </div>
     <div class="menu-filter-tabs" id="menu-filter-tabs">
       <button class="filter-tab active" data-filter="all" onclick="setMenuFilter('all', this)">🍽 All</button>
-      <button class="filter-tab" data-filter="full_meal" onclick="setMenuFilter('full_meal', this)">🍱 Full Meals</button>
-      <button class="filter-tab" data-filter="protein" onclick="setMenuFilter('protein', this)">🥩 Proteins</button>
+      <button class="filter-tab" data-filter="full_meal" onclick="setMenuFilter('full_meal', this)">🍱 FKit (Food Kit)</button>
+      <button class="filter-tab" data-filter="protein" onclick="setMenuFilter('protein', this)">🥩 PIP (Protein Improvement Plan)</button>
     </div>
     <div class="menu-grid" id="menu-grid">
       <!-- populated by JS -->
@@ -1152,8 +1160,8 @@ function renderMenuSkeleton() {
 }
 
 const MENU_CAT_INFO = {
-  full_meal: { label: '🍱 Full Meal', cls: 'cat-full-meal' },
-  protein:   { label: '🥩 Protein',   cls: 'cat-protein'   },
+  full_meal: { label: '🍱 FKit', cls: 'cat-full-meal' },
+  protein:   { label: '🥩 PIP',  cls: 'cat-protein'   },
 };
 
 function renderDishCard(dish) {
@@ -1215,7 +1223,7 @@ function renderMenu() {
     return;
   }
 
-  // On the "All" view, section into Full Meals (top) and À La Carte (bottom) with a divider.
+  // On the "All" view, section into FKit (top) and PIP (bottom) with a divider.
   // Single-category filters just render one flat grid.
   if (state.menuFilter === 'all') {
     const fullMeals = filtered.filter(d => (d.category || 'full_meal') === 'full_meal');
@@ -1223,14 +1231,14 @@ function renderMenu() {
 
     let html = '';
     if (fullMeals.length) {
-      html += `<div class="menu-section-title">🍱 Full Meals</div>`;
+      html += `<div class="menu-section-title">🍱 FKit (Food Kit)</div>`;
       html += fullMeals.map(renderDishCard).join('');
     }
     if (fullMeals.length && alaCarte.length) {
       html += `<hr class="menu-section-divider">`;
     }
     if (alaCarte.length) {
-      html += `<div class="menu-section-title">🥩 À La Carte</div>`;
+      html += `<div class="menu-section-title">🥩 PIP (Protein Improvement Plan)</div>`;
       html += alaCarte.map(renderDishCard).join('');
     }
     grid.innerHTML = html;

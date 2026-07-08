@@ -402,7 +402,7 @@
         </div>
       </div>
 
-      <div class="stats-grid" id="completed-stats" style="display:none">
+      <div class="stats-grid" id="completed-stats" style="display:none;grid-template-columns:repeat(2,1fr);max-width:600px">
         <div class="stat-card"><div class="stat-val" id="stat-completed-orders">—</div><div class="stat-lbl">Total Completed Orders</div></div>
         <div class="stat-card"><div class="stat-val" id="stat-completed-revenue">—</div><div class="stat-lbl">Total Completed Revenue</div></div>
       </div>
@@ -1100,6 +1100,94 @@ async function toggleDishActive(id, active) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // ORDERS
 // ═══════════════════════════════════════════════════════════════════════════════
+function fmtPickupDate(raw) {
+  if (!raw) return '—';
+  const s = String(raw);
+  // Handle ISO timestamp or plain date string
+  const d = new Date(s.includes('T') ? s : s + 'T00:00:00');
+  if (isNaN(d)) return s;
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${days[d.getDay()]} ${d.getDate()} ${mons[d.getMonth()]}`;
+}
+
+// Returns the ISO week (Mon–Sun, week containing the year's first Thursday)
+// that a pickup date falls in, as both a sortable key and a display label.
+function isoWeekInfo(dateStr) {
+  const s = String(dateStr || '');
+  const raw = new Date(s.includes('T') ? s : s + 'T00:00:00');
+  if (isNaN(raw)) return { key: '0000-W00', label: 'Unknown week' };
+
+  const d = new Date(Date.UTC(raw.getFullYear(), raw.getMonth(), raw.getDate()));
+  const dayNum = d.getUTCDay() || 7;           // Mon=1 .. Sun=7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);   // shift to the Thursday of this ISO week
+  const isoYear   = d.getUTCFullYear();
+  const yearStart = new Date(Date.UTC(isoYear, 0, 1));
+  const weekNo    = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+
+  const monday = new Date(d); monday.setUTCDate(d.getUTCDate() - 3);
+  const sunday = new Date(monday); sunday.setUTCDate(monday.getUTCDate() + 6);
+  const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmt = dt => `${dt.getUTCDate()} ${mons[dt.getUTCMonth()]}`;
+
+  return {
+    key:   `${isoYear}-W${String(weekNo).padStart(2,'0')}`,
+    label: `Week ${weekNo}, ${isoYear} (${fmt(monday)} – ${fmt(sunday)})`,
+  };
+}
+
+function renderCompletedOrders(completed) {
+  const totalRevenue = completed.reduce((s,o) => s + Number(o.total||0), 0);
+  document.getElementById('stat-completed-orders').textContent  = completed.length;
+  document.getElementById('stat-completed-revenue').textContent = CONFIG.symbol + totalRevenue.toFixed(2);
+  document.getElementById('completed-stats').style.display = 'grid';
+
+  const wrap = document.getElementById('completed-orders-wrap');
+  if (!completed.length) {
+    wrap.innerHTML = '<div class="card"><div class="card-body" style="padding:40px;text-align:center;color:var(--muted)">No completed orders yet.</div></div>';
+    return;
+  }
+
+  // Group by ISO week of pickup date, most recent week first
+  const groups = new Map();
+  completed.forEach(o => {
+    const { key, label } = isoWeekInfo(o.pickupDate);
+    if (!groups.has(key)) groups.set(key, { label, orders: [] });
+    groups.get(key).orders.push(o);
+  });
+  const sortedKeys = Array.from(groups.keys()).sort().reverse();
+
+  wrap.innerHTML = sortedKeys.map(key => {
+    const { label, orders: weekOrders } = groups.get(key);
+    const weekRevenue = weekOrders.reduce((s,o) => s + Number(o.total||0), 0);
+    const rows = weekOrders.map(o => {
+      const items = Array.isArray(o.items) ? o.items : (() => { try { return JSON.parse(o.items||'[]'); } catch(e) { return []; } })();
+      const itemSummary = items.map(i => `${esc(i.dishName||'?')} ×${Number(i.quantity)||1}`).join(', ');
+      return `<tr>
+        <td style="font-size:12px;font-family:monospace">${esc(o.orderId)}</td>
+        <td><strong>${esc(o.name)}</strong><div style="font-size:12px;color:var(--muted)">${esc(o.phone)}</div></td>
+        <td style="font-size:13px">${itemSummary}</td>
+        <td style="white-space:nowrap">${fmtPickupDate(o.pickupDate)}</td>
+        <td>${esc(o.pickupLocation)}</td>
+        <td style="font-weight:700">${CONFIG.symbol}${Number(o.total).toFixed(2)}</td>
+      </tr>`;
+    }).join('');
+    return `
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title">${esc(label)}</div>
+          <div style="font-size:13px;color:var(--muted)">${weekOrders.length} order${weekOrders.length===1?'':'s'} · ${CONFIG.symbol}${weekRevenue.toFixed(2)}</div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <table class="data-table">
+            <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Pickup</th><th>Location</th><th>Total</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }).join('');
+}
+
 async function loadOrders() {
   let orders;
   if (CONFIG.apiUrl) {
@@ -1109,6 +1197,8 @@ async function loadOrders() {
   }
 
   if (!Array.isArray(orders)) { showToast('Error loading orders: ' + (orders?.error || 'unknown')); return; }
+
+  renderCompletedOrders(orders.filter(o => o.status === 'completed'));
 
   // Show only non-completed, non-cancelled by default (active cycle)
   const active = orders.filter(o => !['completed','cancelled'].includes(o.status));
@@ -1149,17 +1239,6 @@ async function loadOrders() {
     if (s === 'active')   btns.push(`<button class="btn-action btn-complete" onclick="changeOrderStatus('${id}','completed')">Complete</button>`);
     if (s !== 'cancelled' && s !== 'completed') btns.push(`<button class="btn-action btn-cancel" onclick="changeOrderStatus('${id}','cancelled')">Cancel</button>`);
     return btns.join(' ');
-  };
-
-  const fmtPickupDate = raw => {
-    if (!raw) return '—';
-    const s = String(raw);
-    // Handle ISO timestamp or plain date string
-    const d = new Date(s.includes('T') ? s : s + 'T00:00:00');
-    if (isNaN(d)) return s;
-    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${days[d.getDay()]} ${d.getDate()} ${mons[d.getMonth()]}`;
   };
 
   wrap.innerHTML = `
@@ -1519,6 +1598,14 @@ async function loadCustomers() {
   renderCustomersTable();
 }
 
+function fmtLastLogin(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d)) return '—';
+  return d.toLocaleDateString('en-SG', { day:'numeric', month:'short', year:'numeric' })
+       + ' ' + d.toLocaleTimeString('en-SG', { hour:'2-digit', minute:'2-digit' });
+}
+
 function renderCustomersTable() {
   const wrap = document.getElementById('customers-table-wrap');
   if (!custData.length) {
@@ -1527,12 +1614,15 @@ function renderCustomersTable() {
   }
   wrap.innerHTML = `
     <table class="data-table">
-      <thead><tr><th>Phone</th><th>Name</th><th>Notes</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Phone</th><th>Name</th><th>Notes</th><th>Last Login</th><th>Total Orders</th><th>Total Revenue</th><th>Actions</th></tr></thead>
       <tbody>
         ${custData.map(c => `<tr>
             <td style="font-family:monospace">${esc(c.phone)}</td>
             <td>${esc(c.name||'—')}</td>
             <td>${esc(c.notes||'—')}</td>
+            <td>${fmtLastLogin(c.lastLogin)}</td>
+            <td style="text-align:center">${Number(c.totalOrders||0)}</td>
+            <td>${CONFIG.symbol}${Number(c.totalRevenue||0).toFixed(2)}</td>
             <td><button class="btn btn-sm btn-secondary" onclick="openCustomerModal('${esc(String(c.phone).trim())}')">Edit</button></td>
           </tr>`).join('')}
       </tbody>
