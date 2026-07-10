@@ -140,7 +140,7 @@
     .order-detail-grid {
       display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
     }
-    .order-detail-section { }
+    .order-detail-section { min-width: 0; }
     .order-detail-label {
       font-size: 11px; font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.04em; color: var(--muted); margin-bottom: 6px;
@@ -197,6 +197,20 @@
     .photo-drop-icon { font-size: 32px; margin-bottom: 8px; }
     .photo-drop-text { font-size: 14px; color: var(--muted); }
     .photo-preview { width: 100%; height: 160px; border-radius: 8px; object-fit: cover; margin-top: 10px; }
+    .dish-thumb, .dish-thumb-placeholder {
+      width: 56px; height: 56px; border-radius: 8px; flex-shrink: 0;
+      border: 1px solid var(--border);
+    }
+    .dish-thumb { object-fit: contain; background: #fff; }
+    .dish-thumb-placeholder {
+      background: var(--bg); display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+    }
+    .menu-admin-section-row td {
+      background: var(--bg); font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.04em; color: var(--fg);
+      padding: 10px 14px !important;
+    }
 
     /* ── STATS CARDS ───────────────────────────────────────────────────────── */
     .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
@@ -385,6 +399,21 @@
         <div class="stat-card"><div class="stat-val" id="stat-meals">—</div><div class="stat-lbl">Total Meals</div></div>
         <div class="stat-card"><div class="stat-val" id="stat-revenue">—</div><div class="stat-lbl">Revenue</div></div>
         <div class="stat-card"><div class="stat-val" id="stat-avg">—</div><div class="stat-lbl">Avg Order</div></div>
+      </div>
+
+      <div class="page-header" style="margin-top:8px">
+        <div>
+          <div class="page-title" style="font-size:18px">Weekly Pickup Grid</div>
+          <div class="page-sub">Who's picking up where, by day — calendar week starting Sunday</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:28px">
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <div id="pickup-grid-wrap">
+            <div style="padding:40px;text-align:center;color:var(--muted)">Loading…</div>
+          </div>
+        </div>
       </div>
 
       <div class="card">
@@ -785,6 +814,11 @@ async function loadMenu() {
   renderMenuTable();
 }
 
+function dishThumbFallback(cat) {
+  const emoji = cat === 'protein' ? '🥩' : '🍱';
+  return `<div class="dish-thumb-placeholder">${emoji}</div>`;
+}
+
 function renderMenuTable() {
   const wrap = document.getElementById('menu-table-wrap');
   if (!menuData.length) {
@@ -796,37 +830,50 @@ function renderMenuTable() {
     full_meal: '<span class="badge badge-green" style="font-size:11px">🍱 Full Meal</span>',
     protein:   '<span class="badge badge-amber" style="font-size:11px">🥩 Protein</span>',
   };
+  const chipIcons = {protein:'🥩',carb:'🌾',fiber:'🥦'};
+
+  const rowHtml = d => {
+    const m = calcMacros(d);
+    const active = d.active === true || d.active === 'TRUE';
+    const comps = getDishComponents(d);
+    const compStr = comps.map(c => `${chipIcons[c.category]||''} ${esc(c.type)} ${c.grams}g`).join(' · ');
+    const cat = d.category || 'full_meal';
+    const thumbHtml = d.photoUrl
+      ? `<img class="dish-thumb" src="${esc(normalizePhotoUrl(d.photoUrl))}" alt="${esc(d.name)}" onerror="this.outerHTML=dishThumbFallback('${cat}')">`
+      : dishThumbFallback(cat);
+    return `<tr>
+      <td>${thumbHtml}</td>
+      <td><strong>${esc(d.name)}</strong>${d.description?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(d.description.substring(0,60))}${d.description.length>60?'…':''}</div>`:''}</td>
+      <td>${catBadge[cat] || catBadge['full_meal']}</td>
+      <td style="font-size:12px;color:var(--muted)">${compStr||'—'}</td>
+      <td style="white-space:nowrap">
+        <span style="font-weight:700">${m.calories} kcal</span>
+        <div style="font-size:11px;color:var(--muted)">${m.proteinG}g P · ${m.carbsG}g C · ${m.fatG}g F</div>
+      </td>
+      <td style="font-weight:700">$${Number(d.price).toFixed(2)}</td>
+      <td><span class="badge ${active?'badge-green':'badge-red'}">${active?'Active':'Inactive'}</span></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-sm btn-secondary" onclick="openDishModal('${d.id}')" style="margin-right:6px">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="toggleDishActive('${d.id}',${!active})">${active?'Deactivate':'Activate'}</button>
+      </td>
+    </tr>`;
+  };
+
+  // Section into Full Meal then Protein, mirroring the customer-facing menu's
+  // FKit / PIP split (index.html) so admin and customer views read the same way.
+  const fullMeals = menuData.filter(d => (d.category || 'full_meal') === 'full_meal');
+  const proteins  = menuData.filter(d => (d.category || 'full_meal') !== 'full_meal');
+  const sectionRow = label => `<tr class="menu-admin-section-row"><td colspan="8">${label}</td></tr>`;
 
   wrap.innerHTML = `
     <table class="data-table">
       <thead><tr>
-        <th>Dish</th><th>Category</th><th>Components</th>
+        <th></th><th>Dish</th><th>Category</th><th>Components</th>
         <th>Macros (est.)</th><th>Price</th><th>Status</th><th>Actions</th>
       </tr></thead>
       <tbody>
-        ${menuData.map(d => {
-          const m = calcMacros(d);
-          const active = d.active === true || d.active === 'TRUE';
-          const comps = getDishComponents(d);
-          const chipIcons = {protein:'🥩',carb:'🌾',fiber:'🥦'};
-          const compStr = comps.map(c => `${chipIcons[c.category]||''} ${esc(c.type)} ${c.grams}g`).join(' · ');
-          const cat = d.category || 'full_meal';
-          return `<tr>
-            <td><strong>${esc(d.name)}</strong>${d.description?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(d.description.substring(0,60))}${d.description.length>60?'…':''}</div>`:''}</td>
-            <td>${catBadge[cat] || catBadge['full_meal']}</td>
-            <td style="font-size:12px;color:var(--muted)">${compStr||'—'}</td>
-            <td style="white-space:nowrap">
-              <span style="font-weight:700">${m.calories} kcal</span>
-              <div style="font-size:11px;color:var(--muted)">${m.proteinG}g P · ${m.carbsG}g C · ${m.fatG}g F</div>
-            </td>
-            <td style="font-weight:700">$${Number(d.price).toFixed(2)}</td>
-            <td><span class="badge ${active?'badge-green':'badge-red'}">${active?'Active':'Inactive'}</span></td>
-            <td style="white-space:nowrap">
-              <button class="btn btn-sm btn-secondary" onclick="openDishModal('${d.id}')" style="margin-right:6px">Edit</button>
-              <button class="btn btn-sm btn-danger" onclick="toggleDishActive('${d.id}',${!active})">${active?'Deactivate':'Activate'}</button>
-            </td>
-          </tr>`;
-        }).join('')}
+        ${fullMeals.length ? sectionRow('🍱 Full Meal') + fullMeals.map(rowHtml).join('') : ''}
+        ${proteins.length  ? sectionRow('🥩 Protein')   + proteins.map(rowHtml).join('')  : ''}
       </tbody>
     </table>`;
 }
@@ -1188,6 +1235,139 @@ function renderCompletedOrders(completed) {
   }).join('');
 }
 
+/**
+ * Weekly Pickup Grid — columns are calendar days (Sun→Sat) of the week
+ * containing the earliest active pickup date, rows are pickup locations.
+ * Each cell lists every customer/order picking up at that location on that
+ * day; the footer row sums that day's order total across all locations.
+ * Orders whose pickup date falls outside this one week (rare — e.g. a
+ * backfilled manual order) won't get a column here, but still show in the
+ * detailed table below.
+ */
+function renderPickupGrid(active) {
+  const wrap = document.getElementById('pickup-grid-wrap');
+  if (!wrap) return;
+
+  const parseDate = raw => {
+    const s = String(raw || '');
+    return new Date(s.includes('T') ? s : s + 'T00:00:00');
+  };
+
+  const validDates = active
+    .map(o => parseDate(o.pickupDate))
+    .filter(d => !isNaN(d));
+
+  if (!validDates.length) {
+    wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">No active orders to plan around.</div>';
+    return;
+  }
+
+  const earliest = new Date(Math.min(...validDates.map(d => d.getTime())));
+  const sunday = new Date(earliest);
+  sunday.setDate(earliest.getDate() - earliest.getDay());
+
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(sunday);
+    d.setDate(sunday.getDate() + i);
+    days.push(d);
+  }
+
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const isoKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+  // Row labels: every known pickup location, plus any free-text location
+  // that shows up on an order but isn't in the Locations tab.
+  const knownLocs = locData.map(l => l.name).filter(Boolean);
+  const orderLocs = [...new Set(active.map(o => o.pickupLocation).filter(Boolean))];
+  const locNames  = [...new Set([...knownLocs, ...orderLocs])];
+
+  if (!locNames.length) {
+    wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">No pickup locations configured.</div>';
+    return;
+  }
+
+  // Bucket active orders by [location][dayKey] -> [orders]
+  const buckets = {};
+  active.forEach(o => {
+    const d = parseDate(o.pickupDate);
+    if (isNaN(d)) return;
+    const key = isoKey(d);
+    const loc = o.pickupLocation || '—';
+    buckets[loc] = buckets[loc] || {};
+    buckets[loc][key] = buckets[loc][key] || [];
+    buckets[loc][key].push(o);
+  });
+
+  const cellHtml = (loc, dayKey) => {
+    const dayOrders = (buckets[loc] && buckets[loc][dayKey]) || [];
+    if (!dayOrders.length) return '<span style="color:var(--muted)">—</span>';
+    return dayOrders.map(o => {
+      const items = Array.isArray(o.items) ? o.items : (() => { try { return JSON.parse(o.items||'[]'); } catch(e) { return []; } })();
+      const summary = items.map(i => `${esc(i.dishName||'?')} ×${Number(i.quantity)||1}`).join(', ');
+      return `<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed var(--border)">
+        <div style="font-weight:600">${esc(o.name)}</div>
+        <div style="font-size:12px;color:var(--muted)">${summary}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--green)">${CONFIG.symbol}${Number(o.total||0).toFixed(2)}</div>
+      </div>`;
+    }).join('');
+  };
+
+  const dayTotal = dayKey => active
+    .filter(o => { const d = parseDate(o.pickupDate); return !isNaN(d) && isoKey(d) === dayKey; })
+    .reduce((s, o) => s + Number(o.total || 0), 0);
+
+  // Per-day dish quantity breakdown, summed across every location — e.g. how
+  // many Miso Salmon Bento, how many Tamagoyaki, etc. need to be prepped for
+  // that day, regardless of which pickup point they're headed to.
+  const dayItemCounts = dayKey => {
+    const counts = {};
+    active.forEach(o => {
+      const d = parseDate(o.pickupDate);
+      if (isNaN(d) || isoKey(d) !== dayKey) return;
+      const items = Array.isArray(o.items) ? o.items : (() => { try { return JSON.parse(o.items||'[]'); } catch(e) { return []; } })();
+      items.forEach(i => {
+        const name = i.dishName || '?';
+        counts[name] = (counts[name] || 0) + (Number(i.quantity) || 1);
+      });
+    });
+    return counts;
+  };
+
+  const dayItemsHtml = dayKey => {
+    const entries = Object.entries(dayItemCounts(dayKey));
+    if (!entries.length) return '';
+    return `<div style="font-weight:400;font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5">
+      ${entries.map(([name, qty]) => `${esc(name)} ×${qty}`).join('<br>')}
+    </div>`;
+  };
+
+  wrap.innerHTML = `
+    <table class="data-table" style="table-layout:fixed;min-width:920px">
+      <thead><tr>
+        <th style="width:140px">Location</th>
+        ${days.map(d => `<th>${dayNames[d.getDay()]} ${d.getDate()} ${mons[d.getMonth()]}</th>`).join('')}
+      </tr></thead>
+      <tbody>
+        ${locNames.map(loc => `
+          <tr>
+            <td style="font-weight:600;vertical-align:top">${esc(loc)}</td>
+            ${days.map(d => `<td style="vertical-align:top;font-size:13px">${cellHtml(loc, isoKey(d))}</td>`).join('')}
+          </tr>`).join('')}
+      </tbody>
+      <tfoot>
+        <tr style="background:var(--bg)">
+          <td style="font-weight:700;vertical-align:top">Day Total</td>
+          ${days.map(d => {
+            const key = isoKey(d);
+            return `<td style="font-weight:700;vertical-align:top">${CONFIG.symbol}${dayTotal(key).toFixed(2)}${dayItemsHtml(key)}</td>`;
+          }).join('')}
+        </tr>
+      </tfoot>
+    </table>`;
+}
+
 async function loadOrders() {
   let orders;
   if (CONFIG.apiUrl) {
@@ -1213,6 +1393,8 @@ async function loadOrders() {
   document.getElementById('stat-revenue').textContent = CONFIG.symbol + revenue.toFixed(2);
   document.getElementById('stat-avg').textContent     = active.length ? CONFIG.symbol + (revenue/active.length).toFixed(2) : '—';
   document.getElementById('order-stats').style.display = 'grid';
+
+  renderPickupGrid(active);
 
   const wrap = document.getElementById('orders-table-wrap');
   if (!active.length) {
@@ -1773,6 +1955,15 @@ async function openCustomerModal(phone) {
 // no +65/65/0065 country code prefix. All numbers are assumed to be SG numbers.
 function canonicalPhone(raw) {
   let digits = String(raw || '').replace(/\D/g, '');
+
+  // US/Canada (NANP): a "+1"/"1" country code on an 11-digit number. Keep
+  // the full 10-digit number (area code + subscriber) intact — only the
+  // leading "1" country code is dropped, mirroring how "65" is dropped for
+  // Singapore numbers below.
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return digits.slice(1);
+  }
+
   if (digits.length > 8) {
     if (digits.startsWith('0065'))     digits = digits.slice(4);
     else if (digits.startsWith('065')) digits = digits.slice(3);
@@ -1849,6 +2040,16 @@ function handleModalOverlay(e) {
 // ═══════════════════════════════════════════════════════════════════════════════
 function esc(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function normalizePhotoUrl(url) {
+  if (!url) return '';
+  // Google Drive share link → direct image URL
+  let m = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) return `https://lh3.googleusercontent.com/d/${m[1]}`;
+  m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m && url.includes('drive.google.com')) return `https://lh3.googleusercontent.com/d/${m[1]}`;
+  return url;
 }
 let toastTimer;
 function showToast(msg) {
