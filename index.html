@@ -109,6 +109,14 @@
     .hero-cta:hover { background: var(--green-dk); transform: translateY(-1px); }
     .hero-cta svg { flex-shrink: 0; }
 
+    /* ── ORDERING CLOSED BANNER ───────────────────────────────────────────── */
+    .ordering-closed-banner {
+      background: var(--amber-lt); color: var(--amber);
+      border: 1px solid #F5D9AE; border-radius: var(--radius);
+      padding: 16px 20px; margin-bottom: 28px;
+      text-align: center; font-weight: 600; font-size: 15px;
+    }
+
     /* ── SECTION HEADERS ──────────────────────────────────────────────────── */
     .section-header { text-align: center; margin-bottom: 40px; }
     .section-header h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
@@ -600,6 +608,9 @@
 <!-- ── MENU ────────────────────────────────────────────────────────────────── -->
 <section id="menu-section">
   <div class="container">
+    <div class="ordering-closed-banner" id="ordering-closed-banner" style="display:none">
+      🛑 We're not taking orders right now — check back soon!
+    </div>
     <div class="section-header">
       <h2>This Week's Menu of FKits</h2>
       <p>You know what to do.</p>
@@ -757,11 +768,14 @@ const MACROS = {
     'Chicken Breast':     { cal: 165, p: 31, c: 0,  f: 3.6 },
     'Chicken Thigh':      { cal: 177, p: 24, c: 0,  f: 9   },
     'Salmon':             { cal: 208, p: 20, c: 0,  f: 13  },
+    'Half Saba':          { cal: 220, p: 20, c: 0,  f: 15  },
+    'Full Saba':          { cal: 220, p: 20, c: 0,  f: 15  },
     'Tuna (Canned)':      { cal: 132, p: 28, c: 0,  f: 1   },
     'Tofu (Firm)':        { cal: 76,  p: 8,  c: 2,  f: 4   },
     'Eggs (Scrambled)':   { cal: 155, p: 13, c: 1,  f: 11  },
     'Egg (Ajitama)':      { cal: 150, p: 12.5, c: 2, f: 10 },
     'Tamagoyaki':         { cal: 145, p: 10.5, c: 5, f: 9.5 },
+    'Frittata':           { cal: 170, p: 11,   c: 3, f: 12  },
     'Ground Beef (Lean)': { cal: 215, p: 26, c: 0,  f: 12  },
     'Shrimp':             { cal: 99,  p: 24, c: 0,  f: 0.3 },
     'Pork Tenderloin':    { cal: 143, p: 26, c: 0,  f: 4   },
@@ -1037,6 +1051,7 @@ let state = {
   currentOrderId:  null,
   calWeekOffset:   0,
   comments:        '',
+  orderTakingEnabled: true,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1096,19 +1111,25 @@ async function loadMenuAndLocations() {
   renderMenuSkeleton();
 
   if (CONFIG.apiUrl) {
-    const [menuData, locData, paynowData] = await Promise.all([
+    const [menuData, locData, paynowData, orderTakingData] = await Promise.all([
       apiGet({ action: 'getMenu' }),
       apiGet({ action: 'getLocations' }),
       apiGet({ action: 'getPayNowConfig' }),
+      apiGet({ action: 'getOrderTakingStatus' }),
     ]);
     state.menu      = menuData   || DEMO_MENU;
     state.locations = locData    || DEMO_LOCATIONS;
     state.paynow    = paynowData || null;
+    state.orderTakingEnabled = orderTakingData?.enabled !== false;
   } else {
     await new Promise(r => setTimeout(r, 600));
     state.menu      = DEMO_MENU;
     state.locations = DEMO_LOCATIONS;
+    state.orderTakingEnabled = true;
   }
+
+  const banner = document.getElementById('ordering-closed-banner');
+  if (banner) banner.style.display = state.orderTakingEnabled ? 'none' : 'block';
 
   renderMenu();
 }
@@ -1131,6 +1152,14 @@ function canonicalPhone(raw) {
     else if (digits.startsWith('065')) digits = digits.slice(3);
     else if (digits.startsWith('65'))  digits = digits.slice(2);
   }
+
+  // US/Canada (NANP) typed WITHOUT a country code: a bare 10-digit number
+  // that wasn't matched by the 65-prefix check above. Singapore numbers are
+  // only ever 8 digits locally, so a 10-digit run that isn't a recognized
+  // Singapore-with-country-code case is assumed to already be a complete US
+  // number — keep all 10 digits rather than truncating to 8.
+  if (digits.length === 10) return digits;
+
   if (digits.length > 8) digits = digits.slice(-8);
   return digits;
 }
@@ -1205,8 +1234,12 @@ const MENU_CAT_INFO = {
 
 function renderDishCard(dish) {
   const m = calcMacros(dish);
+  const hasId = !!(dish.id && String(dish.id).trim());
+  if (!hasId) {
+    console.warn(`Dish "${dish.name}" has no id (blank in the Menu sheet) — Add to Cart is disabled until this is fixed in admin.html.`);
+  }
   const imgHtml = dish.photoUrl
-    ? `<div class="dish-card-photo"><img class="dish-card-img" src="${esc(normalizePhotoUrl(dish.photoUrl))}" alt="${esc(dish.name)}" onerror="this.parentElement.outerHTML=dishPlaceholder('${esc(dish.id)}')"></div>`
+    ? `<div class="dish-card-photo"><img class="dish-card-img" src="${esc(normalizePhotoUrl(dish.photoUrl))}" alt="${esc(dish.name)}" onerror="this.parentElement.outerHTML=dishPlaceholder('${escJsAttr(dish.id)}')"></div>`
     : dishPlaceholder(dish.id);
 
   const comps = getDishComponents(dish);
@@ -1236,7 +1269,9 @@ function renderDishCard(dish) {
         </div>
         <div class="dish-card-footer">
           <div class="dish-price">${CONFIG.symbol}${Number(dish.price).toFixed(2)} <span>/ meal</span></div>
-          <button class="add-to-order-btn" onclick="addToCart('${dish.id}')">+ Add</button>
+          ${hasId
+            ? `<button class="add-to-order-btn" onclick="addToCart('${escJsAttr(dish.id)}')">+ Add</button>`
+            : `<button class="add-to-order-btn" disabled title="Unavailable — this dish is missing an ID, contact the admin">Unavailable</button>`}
         </div>
       </div>
     </div>`;
@@ -1290,8 +1325,9 @@ function renderMenu() {
 // CART
 // ═══════════════════════════════════════════════════════════════════════════════
 function addToCart(dishId) {
+  if (!dishId) { console.warn('addToCart called with an empty dishId — ignoring.'); return; }
   const dish = state.menu.find(d => d.id === dishId);
-  if (!dish) return;
+  if (!dish) { console.warn(`addToCart: no dish found with id "${dishId}"`); return; }
   const existing = state.cart.find(i => i.dish.id === dishId);
   if (existing) {
     existing.quantity++;
@@ -1334,7 +1370,7 @@ function renderCartList() {
   emptyMsg.style.display = 'none';
   container.innerHTML = state.cart.map(({ dish, quantity }) => {
     const imgHtml = dish.photoUrl
-      ? `<img src="${esc(normalizePhotoUrl(dish.photoUrl))}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=dishPlaceholderSVG('${esc(dish.id)}')">`
+      ? `<img src="${esc(normalizePhotoUrl(dish.photoUrl))}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=dishPlaceholderSVG('${escJsAttr(dish.id)}')">`
       : dishPlaceholderSVG(dish.id);
     return `
       <div class="cart-item">
@@ -1344,9 +1380,9 @@ function renderCartList() {
           <div class="cart-item-price">${CONFIG.symbol}${(dish.price * quantity).toFixed(2)}</div>
         </div>
         <div class="qty-control">
-          <button class="qty-btn" onclick="updateCartQty('${dish.id}', -1)">−</button>
+          <button class="qty-btn" onclick="updateCartQty('${escJsAttr(dish.id)}', -1)">−</button>
           <span class="qty-num">${quantity}</span>
-          <button class="qty-btn" onclick="updateCartQty('${dish.id}', 1)">+</button>
+          <button class="qty-btn" onclick="updateCartQty('${escJsAttr(dish.id)}', 1)">+</button>
         </div>
       </div>`;
   }).join('');
@@ -1427,7 +1463,7 @@ function renderWeeklyView() {
     const pills = locs.map(loc => {
       const isChosen = state.pickup.date === iso && state.pickup.location?.id === loc.id;
       return `<div class="pickup-slot ${isChosen ? 'chosen' : 'avail'}"
-                   onclick="selectPickupSlot('${iso}','${loc.id}')">${esc(loc.name)}</div>`;
+                   onclick="selectPickupSlot('${iso}','${escJsAttr(loc.id)}')">${esc(loc.name)}</div>`;
     }).join('');
 
     return `<div class="pickup-col">
@@ -1847,6 +1883,16 @@ function normalizePhotoUrl(url) {
 
 function esc(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// esc() alone isn't safe for values interpolated into an inline onclick/onerror
+// JS string (e.g. addToCart('${dish.id}')) — a stray single quote in the value
+// would prematurely close the JS string and silently break the handler (this
+// is the root cause behind "button does nothing" bugs when a dish's id/name
+// contains an apostrophe). JS-escape first, then HTML-escape the result for
+// the attribute context.
+function escJsAttr(str) {
+  return esc(String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
 }
 
 let toastTimer;

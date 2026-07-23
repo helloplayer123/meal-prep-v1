@@ -528,6 +528,21 @@
           <div class="page-sub">PayNow payment configuration</div>
         </div>
       </div>
+      <div class="card" style="max-width:520px;margin-bottom:20px">
+        <div class="card-body">
+          <h3 style="margin-bottom:6px;font-size:16px">🛎️ Order Taking</h3>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:16px">
+            Turning this off deactivates every dish, so customers see an empty menu
+            and can't place new orders. Turning it back on restores each dish's
+            previous active/inactive state — nothing that was already deactivated
+            gets accidentally reactivated.
+          </div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <span id="order-taking-badge" class="badge badge-green">🟢 ON</span>
+            <button class="btn btn-secondary" id="order-taking-btn" onclick="toggleOrderTaking()">Turn Off</button>
+          </div>
+        </div>
+      </div>
       <div class="card" style="max-width:520px">
         <div class="card-body">
           <h3 style="margin-bottom:16px;font-size:16px">💳 PayNow Details</h3>
@@ -582,11 +597,14 @@ const MACROS = {
     'Chicken Breast':     {cal:165,p:31,c:0,  f:3.6},
     'Chicken Thigh':      {cal:177,p:24,c:0,  f:9  },
     'Salmon':             {cal:208,p:20,c:0,  f:13 },
+    'Half Saba':          {cal:220,p:20,c:0,  f:15 },
+    'Full Saba':          {cal:220,p:20,c:0,  f:15 },
     'Tuna (Canned)':      {cal:132,p:28,c:0,  f:1  },
     'Tofu (Firm)':        {cal:76, p:8, c:2,  f:4  },
     'Eggs (Scrambled)':   {cal:155,p:13,c:1,  f:11 },
     'Egg (Ajitama)':      {cal:150,p:12.5,c:2,f:10 },
     'Tamagoyaki':         {cal:145,p:10.5,c:5,f:9.5},
+    'Frittata':           {cal:170,p:11,  c:3,f:12 },
     'Ground Beef (Lean)': {cal:215,p:26,c:0,  f:12 },
     'Shrimp':             {cal:99, p:24,c:0,  f:0.3},
     'Pork Tenderloin':    {cal:143,p:26,c:0,  f:4  },
@@ -769,7 +787,7 @@ async function showDashboard() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
   setDefaultDates();
-  await Promise.all([loadMenu(), loadLocations(), loadCustomers(), loadOrders(), loadPayNowConfig()]);
+  await Promise.all([loadMenu(), loadLocations(), loadCustomers(), loadOrders(), loadPayNowConfig(), loadOrderTakingStatus()]);
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -797,7 +815,7 @@ function switchTab(name) {
   document.getElementById(`tab-${name}`).classList.add('active');
   event.currentTarget.classList.add('active');
   if (name === 'orders')   loadOrders();
-  if (name === 'settings') loadPayNowConfig();
+  if (name === 'settings') { loadPayNowConfig(); loadOrderTakingStatus(); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -841,9 +859,17 @@ function renderMenuTable() {
     const thumbHtml = d.photoUrl
       ? `<img class="dish-thumb" src="${esc(normalizePhotoUrl(d.photoUrl))}" alt="${esc(d.name)}" onerror="this.outerHTML=dishThumbFallback('${cat}')">`
       : dishThumbFallback(cat);
+    const hasId = !!(d.id && String(d.id).trim());
+    // Missing ID means this row was likely added by typing directly into the
+    // Google Sheet instead of via "Add Dish" (which auto-generates one) — the
+    // customer-facing Add to Cart button silently fails for it, and
+    // Edit/Deactivate below can misfire onto the wrong row if more than one
+    // dish shares a blank ID. Flag it loudly instead of failing silently.
+    const missingIdBadge = hasId ? '' :
+      `<span class="badge badge-red" style="margin-left:6px" title="This dish has no ID — customers can't add it to cart, and Edit/Deactivate may affect the wrong row. Delete this row and re-add the dish via &quot;Add Dish&quot; above.">⚠️ Missing ID</span>`;
     return `<tr>
       <td>${thumbHtml}</td>
-      <td><strong>${esc(d.name)}</strong>${d.description?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(d.description.substring(0,60))}${d.description.length>60?'…':''}</div>`:''}</td>
+      <td><strong>${esc(d.name)}</strong>${missingIdBadge}${d.description?`<div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(d.description.substring(0,60))}${d.description.length>60?'…':''}</div>`:''}</td>
       <td>${catBadge[cat] || catBadge['full_meal']}</td>
       <td style="font-size:12px;color:var(--muted)">${compStr||'—'}</td>
       <td style="white-space:nowrap">
@@ -853,8 +879,8 @@ function renderMenuTable() {
       <td style="font-weight:700">$${Number(d.price).toFixed(2)}</td>
       <td><span class="badge ${active?'badge-green':'badge-red'}">${active?'Active':'Inactive'}</span></td>
       <td style="white-space:nowrap">
-        <button class="btn btn-sm btn-secondary" onclick="openDishModal('${d.id}')" style="margin-right:6px">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="toggleDishActive('${d.id}',${!active})">${active?'Deactivate':'Activate'}</button>
+        <button class="btn btn-sm btn-secondary" onclick="openDishModal('${escJsAttr(d.id)}')" style="margin-right:6px">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="toggleDishActive('${escJsAttr(d.id)}',${!active})">${active?'Deactivate':'Activate'}</button>
       </td>
     </tr>`;
   };
@@ -1528,6 +1554,55 @@ async function changeOrderStatus(orderId, newStatus) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // PAYNOW CONFIG
 // ═══════════════════════════════════════════════════════════════════════════════
+let orderTakingEnabled = true;
+
+async function loadOrderTakingStatus() {
+  if (!CONFIG.apiUrl) return;
+  try {
+    const res = await apiGet({ action: 'getOrderTakingStatus' });
+    orderTakingEnabled = res?.enabled !== false;
+    renderOrderTakingUI();
+  } catch (e) { /* no-op on load */ }
+}
+
+function renderOrderTakingUI() {
+  const badge = document.getElementById('order-taking-badge');
+  const btn   = document.getElementById('order-taking-btn');
+  if (!badge || !btn) return;
+  if (orderTakingEnabled) {
+    badge.className = 'badge badge-green';
+    badge.textContent = '🟢 ON';
+    btn.textContent = 'Turn Off';
+  } else {
+    badge.className = 'badge badge-red';
+    badge.textContent = '🔴 OFF';
+    btn.textContent = 'Turn On';
+  }
+}
+
+async function toggleOrderTaking() {
+  if (!CONFIG.apiUrl) { showToast('API not configured'); return; }
+  const next = !orderTakingEnabled;
+  const btn = document.getElementById('order-taking-btn');
+  if (btn) btn.disabled = true;
+  try {
+    const res = await apiPost({ action: 'setOrderTaking', token, enabled: next });
+    if (res?.error) { showToast('Error: ' + res.error); return; }
+    orderTakingEnabled = next;
+    renderOrderTakingUI();
+    showToast(next
+      ? 'Order taking turned on — menu restored ✓'
+      : 'Order taking turned off — all dishes deactivated');
+    // Dish active/inactive flags just changed server-side — refresh the Menu
+    // tab so the admin isn't looking at stale data if they switch over.
+    await loadMenu();
+  } catch (e) {
+    showToast('Could not update: ' + e.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 async function loadPayNowConfig() {
   if (!CONFIG.apiUrl) return;
   try {
@@ -1680,7 +1755,7 @@ function renderLocationsTable() {
     const pills = activeLocs.map(l => {
       const isOn = parseAvailDays(l.availableDays).has(dow);
       return `<div class="loc-toggle-pill ${isOn ? 'on' : 'off'}"
-                   onclick="toggleLocDay('${l.id}', ${dow})"
+                   onclick="toggleLocDay('${escJsAttr(l.id)}', ${dow})"
                    title="${esc(l.name)}">${esc(l.name)}</div>`;
     }).join('');
     return `<div class="loc-sched-col">
@@ -1694,7 +1769,7 @@ function renderLocationsTable() {
     const active = l.active === true || l.active === 'TRUE';
     return `<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;${active?'':'opacity:0.45'}">
       ${esc(l.name)}
-      <button onclick="openLocationModal('${l.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;line-height:1" title="Edit">✎</button>
+      <button onclick="openLocationModal('${escJsAttr(l.id)}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;line-height:1" title="Edit">✎</button>
     </span>`;
   }).join('');
 
@@ -1969,6 +2044,14 @@ function canonicalPhone(raw) {
     else if (digits.startsWith('065')) digits = digits.slice(3);
     else if (digits.startsWith('65'))  digits = digits.slice(2);
   }
+
+  // US/Canada (NANP) typed WITHOUT a country code: a bare 10-digit number
+  // that wasn't matched by the 65-prefix check above. Singapore numbers are
+  // only ever 8 digits locally, so a 10-digit run that isn't a recognized
+  // Singapore-with-country-code case is assumed to already be a complete US
+  // number — keep all 10 digits rather than truncating to 8.
+  if (digits.length === 10) return digits;
+
   if (digits.length > 8) digits = digits.slice(-8);
   return digits;
 }
@@ -2040,6 +2123,14 @@ function handleModalOverlay(e) {
 // ═══════════════════════════════════════════════════════════════════════════════
 function esc(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// esc() alone isn't safe inside an inline onclick's JS string (e.g.
+// openDishModal('${d.id}')) — a stray single quote in the value would
+// prematurely close the JS string and silently break the button. JS-escape
+// first, then HTML-escape the result for the attribute context.
+function escJsAttr(str) {
+  return esc(String(str||'').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
 }
 
 function normalizePhotoUrl(url) {
