@@ -1239,7 +1239,7 @@ function renderDishCard(dish) {
     console.warn(`Dish "${dish.name}" has no id (blank in the Menu sheet) — Add to Cart is disabled until this is fixed in admin.html.`);
   }
   const imgHtml = dish.photoUrl
-    ? `<div class="dish-card-photo"><img class="dish-card-img" src="${esc(normalizePhotoUrl(dish.photoUrl))}" alt="${esc(dish.name)}" onerror="this.parentElement.outerHTML=dishPlaceholder('${escJsAttr(dish.id)}')"></div>`
+    ? `<div class="dish-card-photo"><img class="dish-card-img" src="${esc(normalizePhotoUrl(dish.photoUrl, 500))}" alt="${esc(dish.name)}" loading="lazy" onerror="this.parentElement.outerHTML=dishPlaceholder('${escJsAttr(dish.id)}')"></div>`
     : dishPlaceholder(dish.id);
 
   const comps = getDishComponents(dish);
@@ -1370,7 +1370,7 @@ function renderCartList() {
   emptyMsg.style.display = 'none';
   container.innerHTML = state.cart.map(({ dish, quantity }) => {
     const imgHtml = dish.photoUrl
-      ? `<img src="${esc(normalizePhotoUrl(dish.photoUrl))}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=dishPlaceholderSVG('${escJsAttr(dish.id)}')">`
+      ? `<img src="${esc(normalizePhotoUrl(dish.photoUrl, 120))}" style="width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.parentElement.innerHTML=dishPlaceholderSVG('${escJsAttr(dish.id)}')">`
       : dishPlaceholderSVG(dish.id);
     return `
       <div class="cart-item">
@@ -1871,13 +1871,19 @@ async function refreshOrderStatus() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // UTILS
 // ═══════════════════════════════════════════════════════════════════════════════
-function normalizePhotoUrl(url) {
+function normalizePhotoUrl(url, maxWidth) {
   if (!url) return '';
-  // Google Drive share link → direct image URL
+  // Google Drive share link → direct image URL via Google's image-serving CDN,
+  // optionally requesting a downsized version with the "=wNNN" size suffix so
+  // a large AI-generated dish photo isn't downloaded at full resolution just
+  // to be displayed in a small card — meaningfully cuts page weight. Callers
+  // that need the original quality (e.g. the PayNow QR code, which must stay
+  // sharp/scannable) simply omit maxWidth.
+  const sizeSuffix = maxWidth ? `=w${maxWidth}` : '';
   let m = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (m) return `https://lh3.googleusercontent.com/d/${m[1]}`;
+  if (m) return `https://lh3.googleusercontent.com/d/${m[1]}${sizeSuffix}`;
   m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (m && url.includes('drive.google.com')) return `https://lh3.googleusercontent.com/d/${m[1]}`;
+  if (m && url.includes('drive.google.com')) return `https://lh3.googleusercontent.com/d/${m[1]}${sizeSuffix}`;
   return url;
 }
 

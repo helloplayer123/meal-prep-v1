@@ -857,7 +857,7 @@ function renderMenuTable() {
     const compStr = comps.map(c => `${chipIcons[c.category]||''} ${esc(c.type)} ${c.grams}g`).join(' · ');
     const cat = d.category || 'full_meal';
     const thumbHtml = d.photoUrl
-      ? `<img class="dish-thumb" src="${esc(normalizePhotoUrl(d.photoUrl))}" alt="${esc(d.name)}" onerror="this.outerHTML=dishThumbFallback('${cat}')">`
+      ? `<img class="dish-thumb" src="${esc(normalizePhotoUrl(d.photoUrl, 120))}" alt="${esc(d.name)}" loading="lazy" onerror="this.outerHTML=dishThumbFallback('${cat}')">`
       : dishThumbFallback(cat);
     const hasId = !!(d.id && String(d.id).trim());
     // Missing ID means this row was likely added by typing directly into the
@@ -2133,13 +2133,17 @@ function escJsAttr(str) {
   return esc(String(str||'').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
 }
 
-function normalizePhotoUrl(url) {
+function normalizePhotoUrl(url, maxWidth) {
   if (!url) return '';
-  // Google Drive share link → direct image URL
+  // Google Drive share link → direct image URL via Google's image-serving CDN,
+  // optionally downsized with the "=wNNN" suffix so a full-resolution dish
+  // photo isn't downloaded just to render a 56px thumbnail. Callers that need
+  // full quality (e.g. the PayNow QR preview) simply omit maxWidth.
+  const sizeSuffix = maxWidth ? `=w${maxWidth}` : '';
   let m = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (m) return `https://lh3.googleusercontent.com/d/${m[1]}`;
+  if (m) return `https://lh3.googleusercontent.com/d/${m[1]}${sizeSuffix}`;
   m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (m && url.includes('drive.google.com')) return `https://lh3.googleusercontent.com/d/${m[1]}`;
+  if (m && url.includes('drive.google.com')) return `https://lh3.googleusercontent.com/d/${m[1]}${sizeSuffix}`;
   return url;
 }
 let toastTimer;
