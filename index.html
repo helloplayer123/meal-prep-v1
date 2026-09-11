@@ -760,57 +760,16 @@ const CONFIG = {
   symbol: '$',
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MACRO DATABASE (per 100g cooked/as-served)
-// ═══════════════════════════════════════════════════════════════════════════════
-const MACROS = {
-  protein: {
-    'Chicken Breast':     { cal: 165, p: 31, c: 0,  f: 3.6 },
-    'Chicken Thigh':      { cal: 177, p: 24, c: 0,  f: 9   },
-    'Salmon':             { cal: 208, p: 20, c: 0,  f: 13  },
-    'Half Saba':          { cal: 220, p: 20, c: 0,  f: 15  },
-    'Full Saba':          { cal: 220, p: 20, c: 0,  f: 15  },
-    'Tuna (Canned)':      { cal: 132, p: 28, c: 0,  f: 1   },
-    'Tofu (Firm)':        { cal: 76,  p: 8,  c: 2,  f: 4   },
-    'Eggs (Scrambled)':   { cal: 155, p: 13, c: 1,  f: 11  },
-    'Egg (Ajitama)':      { cal: 150, p: 12.5, c: 2, f: 10 },
-    'Tamagoyaki':         { cal: 145, p: 10.5, c: 5, f: 9.5 },
-    'Frittata':           { cal: 170, p: 11,   c: 3, f: 12  },
-    'Ground Beef (Lean)': { cal: 215, p: 26, c: 0,  f: 12  },
-    'Shrimp':             { cal: 99,  p: 24, c: 0,  f: 0.3 },
-    'Pork Tenderloin':    { cal: 143, p: 26, c: 0,  f: 4   },
-    'Turkey Breast':      { cal: 135, p: 30, c: 0,  f: 1   },
-    'Tempeh':             { cal: 193, p: 19, c: 9,  f: 11  },
-    'Pork Spare Ribs':    { cal: 280, p: 18, c: 0,  f: 22  },
-    'Pork Belly':         { cal: 518, p: 9,  c: 0,  f: 53  },
-  },
-  carb: {
-    'Brown Rice':           { cal: 111, p: 2.6, c: 23, f: 0.9 },
-    'Japanese White Rice':  { cal: 130, p: 2.7, c: 28, f: 0.3 },
-    'Thai Jasmine Rice':    { cal: 129, p: 2.7, c: 27, f: 0.3 },
-    'Basmati Rice':         { cal: 121, p: 2.7, c: 25, f: 0.4 },
-    'Quinoa':               { cal: 120, p: 4.4, c: 22, f: 1.9 },
-    'Sweet Potato':         { cal: 86,  p: 1.6, c: 20, f: 0.1 },
-    'Oats':                 { cal: 389, p: 17,  c: 66, f: 7   },
-    'Pasta (Whole Wheat)':  { cal: 124, p: 5.3, c: 27, f: 0.5 },
-    'Potato':               { cal: 77,  p: 2,   c: 17, f: 0.1 },
-    'Cauliflower Rice':     { cal: 25,  p: 1.9, c: 5,  f: 0.3 },
-  },
-  fiber: {
-    'Broccoli':           { cal: 34,  p: 2.8, c: 7,  f: 0.4 },
-    'Spinach':            { cal: 23,  p: 2.9, c: 3.6,f: 0.4 },
-    'Asparagus':          { cal: 20,  p: 2.2, c: 3.9,f: 0.1 },
-    'Green Beans':        { cal: 31,  p: 1.8, c: 7,  f: 0.1 },
-    'Mixed Greens':       { cal: 20,  p: 1.5, c: 3,  f: 0.3 },
-    'Cauliflower':        { cal: 25,  p: 1.9, c: 5,  f: 0.3 },
-    'Zucchini':           { cal: 17,  p: 1.2, c: 3.1,f: 0.3 },
-    'Kale':               { cal: 49,  p: 4.3, c: 9,  f: 0.9 },
-    'Bell Pepper':        { cal: 31,  p: 1,   c: 6,  f: 0.3 },
-    'Bok Choy':           { cal: 13,  p: 1.5, c: 2.2,f: 0.2 },
-    'Sweet Corn':         { cal: 96,  p: 3.4, c: 21, f: 1.5 },
-  }
-};
-
+// NOTE: this file used to keep its own copy of the MACROS ingredient
+// nutrition table (mirrored from admin.html) so it could recalculate a
+// dish's macros live from its components. Removed — this site now just
+// displays each dish's stored calories/proteinG/carbsG/fatG (see
+// renderDishCard below), so it never needs to know about individual
+// ingredients. That table, and the per-ingredient nutrition data, now only
+// needs to exist in admin.html, where dishes are actually built and saved.
+// getDishComponents is still needed here — the ingredient *chips* shown on
+// each dish card (e.g. "🥩 Half Saba") just display each component's name,
+// no nutrition lookup required.
 function getDishComponents(dish) {
   if (dish.components && typeof dish.components === 'string' && dish.components.trim().startsWith('[')) {
     try {
@@ -826,27 +785,6 @@ function getDishComponents(dish) {
   if (dish.carbType)    comps.push({ category: 'carb',    type: dish.carbType,    grams: Number(dish.carbGrams)    || 0 });
   if (dish.fiberType)   comps.push({ category: 'fiber',   type: dish.fiberType,   grams: Number(dish.fiberGrams)   || 0 });
   return comps;
-}
-
-function calcMacros(dish) {
-  const comps = getDishComponents(dish);
-  let cal = 0, p = 0, c = 0, f = 0;
-  comps.forEach(({ category, type, grams }) => {
-    const ref = MACROS[category]?.[type];
-    if (ref && grams > 0) {
-      const factor = grams / 100;
-      cal += ref.cal * factor;
-      p   += ref.p   * factor;
-      c   += ref.c   * factor;
-      f   += ref.f   * factor;
-    }
-  });
-  return {
-    calories: Math.round(cal),
-    proteinG: Math.round(p),
-    carbsG:   Math.round(c),
-    fatG:     Math.round(f),
-  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1108,16 +1046,62 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadMenuAndLocations();
 });
 
+const STOREFRONT_CACHE_KEY = 'storefront_cache_v1';
+const STOREFRONT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+// Menu/locations/PayNow config change rarely (an admin action, at most a few
+// times a day), so a short-lived cache lets browsing back to the menu, or
+// reopening the tab, within a few minutes skip 3 of the 4 page-load API
+// calls entirely — each of those calls is a full Apps Script round-trip that
+// can hit a slow "cold start". sessionStorage (not localStorage) so it
+// clears when the tab closes, capping how stale it can ever get.
+// Deliberately NOT cached: order-taking status. That's a live on/off switch
+// (see setOrderTaking in Code.gs) and must never be stale, so it's always
+// fetched fresh below regardless of whether the rest came from cache.
+function readStorefrontCache() {
+  try {
+    const raw = sessionStorage.getItem(STOREFRONT_CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw);
+    if (!cached || (Date.now() - cached.savedAt) > STOREFRONT_CACHE_TTL_MS) return null;
+    return cached;
+  } catch (e) {
+    return null; // corrupted/unavailable storage — just fall back to a fresh fetch
+  }
+}
+
+function writeStorefrontCache(menu, locations, paynow) {
+  try {
+    sessionStorage.setItem(STOREFRONT_CACHE_KEY, JSON.stringify({
+      savedAt: Date.now(), menu, locations, paynow,
+    }));
+  } catch (e) {
+    // sessionStorage unavailable/full — caching is a nice-to-have, never fatal
+  }
+}
+
 async function loadMenuAndLocations() {
   renderMenuSkeleton();
 
   if (CONFIG.apiUrl) {
-    const [menuData, locData, paynowData, orderTakingData] = await Promise.all([
-      apiGet({ action: 'getMenu' }),
-      apiGet({ action: 'getLocations' }),
-      apiGet({ action: 'getPayNowConfig' }),
-      apiGet({ action: 'getOrderTakingStatus' }),
-    ]);
+    const cached = readStorefrontCache();
+    let menuData, locData, paynowData, orderTakingData;
+
+    if (cached) {
+      menuData        = cached.menu;
+      locData         = cached.locations;
+      paynowData      = cached.paynow;
+      orderTakingData = await apiGet({ action: 'getOrderTakingStatus' });
+    } else {
+      [menuData, locData, paynowData, orderTakingData] = await Promise.all([
+        apiGet({ action: 'getMenu' }),
+        apiGet({ action: 'getLocations' }),
+        apiGet({ action: 'getPayNowConfig' }),
+        apiGet({ action: 'getOrderTakingStatus' }),
+      ]);
+      if (menuData) writeStorefrontCache(menuData, locData, paynowData);
+    }
+
     state.menu      = menuData   || DEMO_MENU;
     state.locations = locData    || DEMO_LOCATIONS;
     state.paynow    = paynowData || null;
@@ -1234,7 +1218,21 @@ const MENU_CAT_INFO = {
 };
 
 function renderDishCard(dish) {
-  const m = calcMacros(dish);
+  // Read the dish's own stored macro totals (computed once by admin.html when
+  // the dish was saved) instead of recalculating live from components + a
+  // local ingredient table. This is deliberate: recalculating client-side
+  // meant the customer site needed its own copy of every ingredient's
+  // nutrition data, so a brand-new ingredient (e.g. added to the Meal
+  // Components builder in admin.html) would silently show wrong totals here
+  // until this file was redeployed with a matching update. Trusting the
+  // stored values means this site never needs to know about ingredients at
+  // all — it just displays whatever admin.html already computed and saved.
+  const m = {
+    calories: Math.round(Number(dish.calories) || 0),
+    proteinG: Math.round(Number(dish.proteinG) || 0),
+    carbsG:   Math.round(Number(dish.carbsG) || 0),
+    fatG:     Math.round(Number(dish.fatG) || 0),
+  };
   const hasId = !!(dish.id && String(dish.id).trim());
   if (!hasId) {
     console.warn(`Dish "${dish.name}" has no id (blank in the Menu sheet) — Add to Cart is disabled until this is fixed in admin.html.`);
