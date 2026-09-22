@@ -1080,43 +1080,45 @@ function writeStorefrontCache(menu, locations, paynow) {
   }
 }
 
+function applyStorefrontBootstrap(data) {
+  state.menu      = Array.isArray(data?.menu)      ? data.menu      : DEMO_MENU;
+  state.locations = Array.isArray(data?.locations) ? data.locations : DEMO_LOCATIONS;
+  state.paynow    = data?.paynow || null;
+  state.orderTakingEnabled = data?.orderTakingEnabled !== false;
+
+  const banner = document.getElementById('ordering-closed-banner');
+  if (banner) banner.style.display = state.orderTakingEnabled ? 'none' : 'block';
+  renderMenu();
+}
+
 async function loadMenuAndLocations() {
   renderMenuSkeleton();
 
   if (CONFIG.apiUrl) {
     const cached = readStorefrontCache();
-    let menuData, locData, paynowData, orderTakingData;
-
     if (cached) {
-      menuData        = cached.menu;
-      locData         = cached.locations;
-      paynowData      = cached.paynow;
-      orderTakingData = await apiGet({ action: 'getOrderTakingStatus' });
-    } else {
-      [menuData, locData, paynowData, orderTakingData] = await Promise.all([
-        apiGet({ action: 'getMenu' }),
-        apiGet({ action: 'getLocations' }),
-        apiGet({ action: 'getPayNowConfig' }),
-        apiGet({ action: 'getOrderTakingStatus' }),
-      ]);
-      if (menuData) writeStorefrontCache(menuData, locData, paynowData);
+      // Keep the kill-switch fresh while using cached menu/locations/PayNow.
+      const orderTakingData = await apiGet({ action: 'getOrderTakingStatus' });
+      applyStorefrontBootstrap({
+        menu: cached.menu,
+        locations: cached.locations,
+        paynow: cached.paynow,
+        orderTakingEnabled: orderTakingData?.enabled !== false,
+      });
+      return;
     }
 
-    state.menu      = menuData   || DEMO_MENU;
-    state.locations = locData    || DEMO_LOCATIONS;
-    state.paynow    = paynowData || null;
-    state.orderTakingEnabled = orderTakingData?.enabled !== false;
-  } else {
-    await new Promise(r => setTimeout(r, 600));
-    state.menu      = DEMO_MENU;
-    state.locations = DEMO_LOCATIONS;
-    state.orderTakingEnabled = true;
+    // Cache miss: one Apps Script execution instead of four separate calls.
+    const data = await apiGet({ action: 'getStorefrontBootstrap' });
+    if (data?.menu) writeStorefrontCache(data.menu, data.locations, data.paynow);
+    applyStorefrontBootstrap(data || {});
+    return;
   }
 
-  const banner = document.getElementById('ordering-closed-banner');
-  if (banner) banner.style.display = state.orderTakingEnabled ? 'none' : 'block';
-
-  renderMenu();
+  await new Promise(r => setTimeout(r, 600));
+  applyStorefrontBootstrap({
+    menu: DEMO_MENU, locations: DEMO_LOCATIONS, paynow: null, orderTakingEnabled: true,
+  });
 }
 
 // Canonicalize a phone number to a bare Singapore local number: digits only,
@@ -1162,25 +1164,30 @@ async function verifyPhoneLogin() {
   errEl.textContent = '';
 
   try {
-    let verified = false, name = '';
+    let data;
 
     if (CONFIG.apiUrl) {
-      const res = await apiGet({ action: 'verifyCustomer', phone });
-      verified = res?.verified === true;
-      name     = res?.name || '';
+      // Verify the customer and load the entire storefront in ONE Apps Script
+      // round trip. This removes the old verifyCustomer -> 4-request waterfall.
+      data = await apiGet({ action: 'loginBootstrap', phone });
     } else {
-      // Demo mode — accept any number
-      verified = true;
-      name     = 'Demo User';
+      data = {
+        verified: true, name: 'Demo User',
+        menu: DEMO_MENU, locations: DEMO_LOCATIONS, paynow: null,
+        orderTakingEnabled: true,
+      };
     }
 
-    if (verified) {
+    if (data?.verified === true) {
+      const name = data.name || '';
       sessionStorage.setItem('verified_phone', phone);
       sessionStorage.setItem('verified_name',  name);
       state.customer.phone = phone;
       state.customer.name  = name;
+
+      if (data.menu) writeStorefrontCache(data.menu, data.locations, data.paynow);
       document.getElementById('login-overlay').style.display = 'none';
-      await loadMenuAndLocations();
+      applyStorefrontBootstrap(data);
     } else {
       errEl.textContent = 'Number not recognised. Contact us to get access.';
     }
