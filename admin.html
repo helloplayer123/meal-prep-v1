@@ -676,6 +676,7 @@ let token    = sessionStorage.getItem('admin_token') || '';
 let menuData = [];
 let locData  = [];
 let custData = [];
+let orderData = [];
 
 let editingComponents    = [];
 let editingCustomPricing = []; // [{dishCategory, dishId, dishName, customPrice}]
@@ -1405,6 +1406,7 @@ async function loadOrders() {
   }
 
   if (!Array.isArray(orders)) { showToast('Error loading orders: ' + (orders?.error || 'unknown')); return; }
+  orderData = orders;
 
   renderCompletedOrders(orders.filter(o => o.status === 'completed'));
 
@@ -1443,8 +1445,9 @@ async function loadOrders() {
 
   const actionBtns = o => {
     const s = o.status || 'pending';
-    const id = esc(o.orderId);
+    const id = escJsAttr(o.orderId);
     const btns = [];
+    if (s !== 'cancelled' && s !== 'completed') btns.push(`<button class="btn-action btn-amber" onclick="openOrderEditModal('${id}')">Edit</button>`);
     if (s === 'pending')  btns.push(`<button class="btn-action btn-approve" onclick="changeOrderStatus('${id}','active')">Approve</button>`);
     if (s === 'active')   btns.push(`<button class="btn-action btn-complete" onclick="changeOrderStatus('${id}','completed')">Complete</button>`);
     if (s !== 'cancelled' && s !== 'completed') btns.push(`<button class="btn-action btn-cancel" onclick="changeOrderStatus('${id}','cancelled')">Cancel</button>`);
@@ -1538,6 +1541,76 @@ function toggleOrderDetail(orderId) {
   if (!panel) return;
   const isOpen = panel.classList.toggle('open');
   if (chev) chev.classList.toggle('open', isOpen);
+}
+
+function openOrderEditModal(orderId) {
+  const order = orderData.find(o => String(o.orderId) === String(orderId));
+  if (!order) { showToast('Order not found'); return; }
+  const items = Array.isArray(order.items) ? order.items : (() => { try { return JSON.parse(order.items || '[]'); } catch(e) { return []; } })();
+  if (!items.length) { showToast('This order has no editable items'); return; }
+
+  const itemRows = items.map((item, index) => {
+    const quantity = Number(item.quantity) || 1;
+    const unitPrice = Number(item.unitPrice) || 0;
+    return `
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:12px;align-items:end;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-weight:600">${esc(item.dishName || '?')}</div>
+          <div style="font-size:12px;color:var(--muted)">${CONFIG.symbol}${unitPrice.toFixed(2)} each</div>
+        </div>
+        <div>
+          <label class="form-label" for="edit-order-quantity-${index}">Quantity</label>
+          <input class="form-control edit-order-quantity" type="number" id="edit-order-quantity-${index}" min="1" max="999" step="1" value="${quantity}">
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('modal-box').innerHTML = `
+    <div class="modal-title">Edit Order</div>
+    <input type="hidden" id="edit-order-id" value="${esc(orderId)}">
+    <div class="form-group">
+      <label class="form-label">Pickup Date</label>
+      <input class="form-control" type="date" id="edit-order-pickup-date" value="${esc(String(order.pickupDate || '').slice(0,10))}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Ordered Quantities</label>
+      ${itemRows}
+    </div>
+    <div class="form-hint">Totals are recalculated from the unit prices stored with this order. Item details, original prices, location, comments and status are unchanged.</div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="save-order-btn" onclick="saveOrderEdit()">Save Changes</button>
+    </div>`;
+  openModal();
+}
+
+async function saveOrderEdit() {
+  const orderId = document.getElementById('edit-order-id')?.value || '';
+  const pickupDate = document.getElementById('edit-order-pickup-date')?.value || '';
+  const quantityInputs = Array.from(document.querySelectorAll('.edit-order-quantity'));
+  const quantities = quantityInputs.map(input => Number(input.value));
+  const btn = document.getElementById('save-order-btn');
+
+  if (!orderId) { showToast('Missing order ID'); return; }
+  if (!pickupDate) { showToast('Choose a pickup date'); return; }
+  if (!quantities.length || quantities.some(qty => !Number.isInteger(qty) || qty < 1 || qty > 999)) {
+    showToast('Each quantity must be a whole number from 1 to 999');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const res = await apiPost({ action:'updateOrder', token, orderId, pickupDate, quantities });
+    if (res?.error) { showToast('Error: ' + res.error); return; }
+    closeModal();
+    showToast('Order updated');
+    await loadOrders();
+  } catch (e) {
+    showToast('Could not update order');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save Changes'; }
+  }
 }
 
 async function changeOrderStatus(orderId, newStatus) {
