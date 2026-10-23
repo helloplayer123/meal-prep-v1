@@ -391,10 +391,7 @@
           <div class="page-title">Orders</div>
           <div class="page-sub">All active orders this cycle</div>
         </div>
-        <div style="display:flex;gap:10px">
-          <button class="btn btn-primary" onclick="openAddOrderModal()">+ Add Order</button>
-          <button class="btn btn-secondary" onclick="loadOrders()">↻ Refresh</button>
-        </div>
+        <button class="btn btn-secondary" onclick="loadOrders()">↻ Refresh</button>
       </div>
 
       <div class="stats-grid" id="order-stats" style="display:none">
@@ -621,6 +618,7 @@ const MACROS = {
     'Japanese White Rice':  {cal:130,p:2.7,c:28,f:0.3},
     'Thai Jasmine Rice':    {cal:129,p:2.7,c:27,f:0.3},
     'Basmati Rice':         {cal:121,p:2.7,c:25,f:0.4},
+    'Soba (Cooked)':        {cal:99, p:5.1,c:21.4,f:0.1},
     'Quinoa':               {cal:120,p:4.4,c:22,f:1.9},
     'Sweet Potato':         {cal:86, p:1.6,c:20,f:0.1},
     'Oats':                 {cal:389,p:17, c:66,f:7  },
@@ -679,8 +677,6 @@ let token    = sessionStorage.getItem('admin_token') || '';
 let menuData = [];
 let locData  = [];
 let custData = [];
-let orderData = [];
-let adminOrderItems = [];
 
 let editingComponents    = [];
 let editingCustomPricing = []; // [{dishCategory, dishId, dishName, customPrice}]
@@ -1216,143 +1212,6 @@ function isoWeekInfo(dateStr) {
   };
 }
 
-function localIsoDate(date) {
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-}
-
-function openAddOrderModal() {
-  if (!menuData.length) { showToast('Add a meal before creating an order'); return; }
-  if (!locData.length) { showToast('Add an active pickup location first'); return; }
-  adminOrderItems = [{ dishId:'', quantity:1, unitPrice:'' }];
-  const customerOptions = custData.map(c => `<option value="${esc(c.phone)}">${esc(c.name || 'Unnamed customer')}</option>`).join('');
-  const locationOptions = locData.map(l => `<option value="${esc(l.name)}">${esc(l.name)}</option>`).join('');
-
-  document.getElementById('modal-box').innerHTML = `
-    <div class="modal-title">Add Customer Order</div>
-    <div class="form-group">
-      <label class="form-label">Customer Number</label>
-      <input class="form-control" id="admin-order-phone" list="admin-order-customers" inputmode="tel" placeholder="e.g. 91234567" oninput="updateAdminOrderCustomerHint()">
-      <datalist id="admin-order-customers">${customerOptions}</datalist>
-      <div class="form-hint" id="admin-order-customer-hint">Choose an existing customer number.</div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Meals</label>
-      <div id="admin-order-items"></div>
-      <button class="btn btn-secondary" type="button" style="margin-top:10px" onclick="addAdminOrderItem()">+ Add Another Meal</button>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div class="form-group">
-        <label class="form-label">Pickup Date</label>
-        <input class="form-control" type="date" id="admin-order-pickup-date" value="${localIsoDate(new Date())}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Pickup Location</label>
-        <select class="form-control" id="admin-order-location">
-          <option value="">Select location…</option>${locationOptions}
-        </select>
-      </div>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
-      <span style="font-weight:600">Order Total</span>
-      <span id="admin-order-total" style="font-size:20px;font-weight:700">${CONFIG.symbol}0.00</span>
-    </div>
-    <div class="form-hint" style="margin-top:8px">The order will be created as confirmed. Prices entered here are stored as this order's unit-price snapshots.</div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" id="create-admin-order-btn" onclick="saveAdminOrder()">Create Order</button>
-    </div>`;
-  renderAdminOrderItems();
-  openModal();
-}
-
-function renderAdminOrderItems() {
-  const wrap = document.getElementById('admin-order-items');
-  if (!wrap) return;
-  const mealOptions = selectedId => menuData.map(d =>
-    `<option value="${esc(d.id)}" ${String(d.id)===String(selectedId)?'selected':''}>${esc(d.name)}${d.active===false || d.active==='FALSE' ? ' (inactive)' : ''}</option>`
-  ).join('');
-  wrap.innerHTML = adminOrderItems.map((item, index) => `
-    <div style="display:grid;grid-template-columns:minmax(180px,1fr) 90px 110px 34px;gap:8px;align-items:end;padding:9px 0;border-bottom:1px solid var(--border)">
-      <div><label class="form-label">Meal</label><select class="form-control" onchange="selectAdminOrderMeal(${index},this.value)">
-        <option value="">Select meal…</option>${mealOptions(item.dishId)}
-      </select></div>
-      <div><label class="form-label">Quantity</label><input class="form-control" type="number" min="1" max="999" step="1" value="${esc(item.quantity)}" oninput="setAdminOrderItemValue(${index},'quantity',this.value)"></div>
-      <div><label class="form-label">Price Each</label><input class="form-control" type="number" min="0" max="10000" step="0.01" value="${esc(item.unitPrice)}" oninput="setAdminOrderItemValue(${index},'unitPrice',this.value)"></div>
-      <button class="rm-comp-btn" type="button" title="Remove meal" onclick="removeAdminOrderItem(${index})" ${adminOrderItems.length===1?'disabled style="opacity:.35;cursor:not-allowed"':''}>×</button>
-    </div>`).join('');
-  updateAdminOrderTotal();
-}
-
-function selectAdminOrderMeal(index, dishId) {
-  const dish = menuData.find(d => String(d.id) === String(dishId));
-  adminOrderItems[index].dishId = dishId;
-  adminOrderItems[index].unitPrice = dish ? Number(dish.price || 0).toFixed(2) : '';
-  renderAdminOrderItems();
-}
-
-function setAdminOrderItemValue(index, field, value) {
-  if (!adminOrderItems[index]) return;
-  adminOrderItems[index][field] = value;
-  updateAdminOrderTotal();
-}
-
-function addAdminOrderItem() {
-  adminOrderItems.push({ dishId:'', quantity:1, unitPrice:'' });
-  renderAdminOrderItems();
-}
-
-function removeAdminOrderItem(index) {
-  if (adminOrderItems.length <= 1) return;
-  adminOrderItems.splice(index, 1);
-  renderAdminOrderItems();
-}
-
-function updateAdminOrderTotal() {
-  const total = adminOrderItems.reduce((sum, item) => sum + (Number(item.quantity)||0) * (Number(item.unitPrice)||0), 0);
-  const el = document.getElementById('admin-order-total');
-  if (el) el.textContent = CONFIG.symbol + total.toFixed(2);
-}
-
-function updateAdminOrderCustomerHint() {
-  const phone = canonicalPhone(document.getElementById('admin-order-phone')?.value || '');
-  const customer = custData.find(c => canonicalPhone(c.phone) === phone);
-  const hint = document.getElementById('admin-order-customer-hint');
-  if (!hint) return;
-  hint.textContent = customer ? `Customer: ${customer.name || 'Unnamed customer'}` : 'Customer not found. Add them in Customers first.';
-  hint.style.color = customer ? 'var(--green)' : 'var(--muted)';
-}
-
-async function saveAdminOrder() {
-  const phone = canonicalPhone(document.getElementById('admin-order-phone')?.value || '');
-  const pickupDate = document.getElementById('admin-order-pickup-date')?.value || '';
-  const pickupLocation = document.getElementById('admin-order-location')?.value || '';
-  const btn = document.getElementById('create-admin-order-btn');
-  const items = adminOrderItems.map(item => ({ dishId:item.dishId, quantity:Number(item.quantity), unitPrice:Number(item.unitPrice) }));
-
-  if (!phone) { showToast('Customer number is required'); return; }
-  if (!custData.some(c => canonicalPhone(c.phone) === phone)) { showToast('Customer not found. Add the customer first.'); return; }
-  if (!pickupDate) { showToast('Choose a pickup date'); return; }
-  if (!pickupLocation) { showToast('Choose a pickup location'); return; }
-  if (items.some(item => !item.dishId)) { showToast('Choose a meal for every line'); return; }
-  if (new Set(items.map(item => String(item.dishId))).size !== items.length) { showToast('Each meal can only be added once'); return; }
-  if (items.some(item => !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 999)) { showToast('Each quantity must be a whole number from 1 to 999'); return; }
-  if (items.some(item => !Number.isFinite(item.unitPrice) || item.unitPrice < 0 || item.unitPrice > 10000)) { showToast('Each price must be between 0 and 10000'); return; }
-
-  btn.disabled = true;
-  btn.textContent = 'Creating…';
-  try {
-    const res = await apiPost({ action:'createAdminOrder', token, order:{ phone, pickupDate, pickupLocation, items } });
-    if (res?.error) { showToast('Error: ' + res.error); return; }
-    closeModal();
-    showToast(`Order ${res.orderId} created`);
-    await loadOrders();
-  } catch (e) {
-    showToast('Could not create order');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Create Order'; }
-  }
-}
-
 function renderCompletedOrders(completed) {
   const totalRevenue = completed.reduce((s,o) => s + Number(o.total||0), 0);
   document.getElementById('stat-completed-orders').textContent  = completed.length;
@@ -1547,7 +1406,6 @@ async function loadOrders() {
   }
 
   if (!Array.isArray(orders)) { showToast('Error loading orders: ' + (orders?.error || 'unknown')); return; }
-  orderData = orders;
 
   renderCompletedOrders(orders.filter(o => o.status === 'completed'));
 
@@ -1587,8 +1445,9 @@ async function loadOrders() {
   const actionBtns = o => {
     const s = o.status || 'pending';
     const id = escJsAttr(o.orderId);
+    const pickupDate = escJsAttr(String(o.pickupDate || '').slice(0, 10));
     const btns = [];
-    if (s !== 'cancelled' && s !== 'completed') btns.push(`<button class="btn-action btn-amber" onclick="openOrderEditModal('${id}')">Edit</button>`);
+    if (s !== 'cancelled' && s !== 'completed') btns.push(`<button class="btn-action btn-amber" onclick="openOrderPickupDateModal('${id}','${pickupDate}')">Edit</button>`);
     if (s === 'pending')  btns.push(`<button class="btn-action btn-approve" onclick="changeOrderStatus('${id}','active')">Approve</button>`);
     if (s === 'active')   btns.push(`<button class="btn-action btn-complete" onclick="changeOrderStatus('${id}','completed')">Complete</button>`);
     if (s !== 'cancelled' && s !== 'completed') btns.push(`<button class="btn-action btn-cancel" onclick="changeOrderStatus('${id}','cancelled')">Cancel</button>`);
@@ -1684,73 +1543,42 @@ function toggleOrderDetail(orderId) {
   if (chev) chev.classList.toggle('open', isOpen);
 }
 
-function openOrderEditModal(orderId) {
-  const order = orderData.find(o => String(o.orderId) === String(orderId));
-  if (!order) { showToast('Order not found'); return; }
-  const items = Array.isArray(order.items) ? order.items : (() => { try { return JSON.parse(order.items || '[]'); } catch(e) { return []; } })();
-  if (!items.length) { showToast('This order has no editable items'); return; }
-
-  const itemRows = items.map((item, index) => {
-    const quantity = Number(item.quantity) || 1;
-    const unitPrice = Number(item.unitPrice) || 0;
-    return `
-      <div style="display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:12px;align-items:end;padding:10px 0;border-bottom:1px solid var(--border)">
-        <div>
-          <div style="font-weight:600">${esc(item.dishName || '?')}</div>
-          <div style="font-size:12px;color:var(--muted)">${CONFIG.symbol}${unitPrice.toFixed(2)} each</div>
-        </div>
-        <div>
-          <label class="form-label" for="edit-order-quantity-${index}">Quantity</label>
-          <input class="form-control edit-order-quantity" type="number" id="edit-order-quantity-${index}" min="1" max="999" step="1" value="${quantity}">
-        </div>
-      </div>`;
-  }).join('');
-
+function openOrderPickupDateModal(orderId, pickupDate) {
   document.getElementById('modal-box').innerHTML = `
-    <div class="modal-title">Edit Order</div>
+    <div class="modal-title">Edit Pickup Date</div>
     <input type="hidden" id="edit-order-id" value="${esc(orderId)}">
     <div class="form-group">
       <label class="form-label">Pickup Date</label>
-      <input class="form-control" type="date" id="edit-order-pickup-date" value="${esc(String(order.pickupDate || '').slice(0,10))}">
+      <input class="form-control" type="date" id="edit-order-pickup-date" value="${esc(String(pickupDate || '').slice(0,10))}">
     </div>
-    <div class="form-group">
-      <label class="form-label">Ordered Quantities</label>
-      ${itemRows}
-    </div>
-    <div class="form-hint">Totals are recalculated from the unit prices stored with this order. Item details, original prices, location, comments and status are unchanged.</div>
+    <div class="form-hint">This changes only the pickup date. Location, items, pricing and status are unchanged.</div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" id="save-order-btn" onclick="saveOrderEdit()">Save Changes</button>
+      <button class="btn btn-primary" id="save-order-pickup-date-btn" onclick="saveOrderPickupDate()">Save Date</button>
     </div>`;
   openModal();
 }
 
-async function saveOrderEdit() {
+async function saveOrderPickupDate() {
   const orderId = document.getElementById('edit-order-id')?.value || '';
   const pickupDate = document.getElementById('edit-order-pickup-date')?.value || '';
-  const quantityInputs = Array.from(document.querySelectorAll('.edit-order-quantity'));
-  const quantities = quantityInputs.map(input => Number(input.value));
-  const btn = document.getElementById('save-order-btn');
+  const btn = document.getElementById('save-order-pickup-date-btn');
 
   if (!orderId) { showToast('Missing order ID'); return; }
   if (!pickupDate) { showToast('Choose a pickup date'); return; }
-  if (!quantities.length || quantities.some(qty => !Number.isInteger(qty) || qty < 1 || qty > 999)) {
-    showToast('Each quantity must be a whole number from 1 to 999');
-    return;
-  }
 
   btn.disabled = true;
   btn.textContent = 'Saving…';
   try {
-    const res = await apiPost({ action:'updateOrder', token, orderId, pickupDate, quantities });
+    const res = await apiPost({ action:'updateOrderPickupDate', token, orderId, pickupDate });
     if (res?.error) { showToast('Error: ' + res.error); return; }
     closeModal();
-    showToast('Order updated');
+    showToast('Pickup date updated');
     await loadOrders();
   } catch (e) {
-    showToast('Could not update order');
+    showToast('Could not update pickup date');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Save Changes'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Save Date'; }
   }
 }
 
