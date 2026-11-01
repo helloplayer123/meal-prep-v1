@@ -109,13 +109,24 @@
     .hero-cta:hover { background: var(--green-dk); transform: translateY(-1px); }
     .hero-cta svg { flex-shrink: 0; }
 
-    /* ── ORDERING CLOSED BANNER ───────────────────────────────────────────── */
+    /* Closed-store illustration uses the existing admin ordering switch. */
     .ordering-closed-banner {
-      background: var(--amber-lt); color: var(--amber);
-      border: 1px solid #F5D9AE; border-radius: var(--radius);
-      padding: 16px 20px; margin-bottom: 28px;
-      text-align: center; font-weight: 600; font-size: 15px;
+      max-width: 640px; margin: 0 auto; padding: 0 0 24px;
+      text-align: center;
     }
+    .ordering-closed-banner img {
+      display: block; width: 100%; height: auto; border-radius: var(--radius);
+      margin: 0 auto 24px;
+    }
+    .ordering-closed-banner h2 {
+      font-size: clamp(24px, 5vw, 32px); line-height: 1.25; margin-bottom: 12px;
+    }
+    .ordering-closed-banner p { color: var(--muted); font-size: 16px; line-height: 1.6; }
+    body.store-closed .hero-cta,
+    body.store-closed .nav-order-btn { display: none; }
+    #menu-section.store-closed .section-header,
+    #menu-section.store-closed .menu-filter-tabs,
+    #menu-section.store-closed .menu-grid { display: none; }
 
     /* ── SECTION HEADERS ──────────────────────────────────────────────────── */
     .section-header { text-align: center; margin-bottom: 40px; }
@@ -608,8 +619,10 @@
 <!-- ── MENU ────────────────────────────────────────────────────────────────── -->
 <section id="menu-section">
   <div class="container">
-    <div class="ordering-closed-banner" id="ordering-closed-banner" style="display:none">
-      🛑 We're not taking orders right now — check back soon!
+    <div class="ordering-closed-banner" id="ordering-closed-banner" style="display:none" role="status" aria-live="polite">
+      <img id="closed-store-image" src="https://lh3.googleusercontent.com/d/13M8vdOj490ocNvY81E7gxJn0vxjJCp7M" width="900" height="675" alt="CB Aaron chef flips the sign to BRB and waves goodbye." loading="lazy" decoding="async">
+      <h2>Kitchen’s taking a little break.</h2>
+      <p>FKits will be back soon.</p>
     </div>
     <div class="section-header">
       <h2>This Week's Menu of FKits</h2>
@@ -1085,9 +1098,11 @@ function applyStorefrontBootstrap(data) {
   state.locations = Array.isArray(data?.locations) ? data.locations : DEMO_LOCATIONS;
   state.paynow    = data?.paynow || null;
   state.orderTakingEnabled = data?.orderTakingEnabled !== false;
+  const defaultBreakImage = 'https://drive.google.com/file/d/13M8vdOj490ocNvY81E7gxJn0vxjJCp7M/view';
+  const imageUrl = data?.closedStoreImageUrl || defaultBreakImage;
+  const safeImageUrl = /^https:\/\/[^\s]+$/i.test(imageUrl) ? imageUrl : defaultBreakImage;
+  document.getElementById('closed-store-image').src = normalizePhotoUrl(safeImageUrl);
 
-  const banner = document.getElementById('ordering-closed-banner');
-  if (banner) banner.style.display = state.orderTakingEnabled ? 'none' : 'block';
   renderMenu();
 }
 
@@ -1104,6 +1119,7 @@ async function loadMenuAndLocations() {
         locations: cached.locations,
         paynow: cached.paynow,
         orderTakingEnabled: orderTakingData?.enabled !== false,
+        closedStoreImageUrl: orderTakingData?.closedStoreImageUrl,
       });
       return;
     }
@@ -1284,7 +1300,12 @@ function renderDishCard(dish) {
 }
 
 function renderMenu() {
+  const closed = !state.orderTakingEnabled;
+  document.body.classList.toggle('store-closed', closed);
+  document.getElementById('menu-section').classList.toggle('store-closed', closed);
+  document.getElementById('ordering-closed-banner').style.display = closed ? 'block' : 'none';
   const grid = document.getElementById('menu-grid');
+  if (closed) { grid.innerHTML = ''; return; }
   const filtered = state.menu.filter(d => {
     // Client-side active guard (server already filters, but belt-and-suspenders)
     const a = d.active;
@@ -1331,6 +1352,11 @@ function renderMenu() {
 // CART
 // ═══════════════════════════════════════════════════════════════════════════════
 function addToCart(dishId) {
+  if (!state.orderTakingEnabled) {
+    showToast('Kitchen’s taking a little break. FKits will be back soon.');
+    scrollToMenu();
+    return;
+  }
   if (!dishId) { console.warn('addToCart called with an empty dishId — ignoring.'); return; }
   const dish = state.menu.find(d => d.id === dishId);
   if (!dish) { console.warn(`addToCart: no dish found with id "${dishId}"`); return; }
@@ -1513,6 +1539,11 @@ function selectPickupSlot(iso, locId) {
 // ORDER PANEL
 // ═══════════════════════════════════════════════════════════════════════════════
 function openOrderPanel() {
+  if (!state.orderTakingEnabled) {
+    showToast('Kitchen’s taking a little break. FKits will be back soon.');
+    scrollToMenu();
+    return;
+  }
   document.getElementById('order-overlay').classList.add('open');
   renderCartList();
   document.body.style.overflow = 'hidden';
@@ -1738,6 +1769,11 @@ function renderCheckout() {
 }
 
 async function submitOrder() {
+  if (!state.orderTakingEnabled) {
+    showToast('Kitchen’s taking a little break. FKits will be back soon.');
+    scrollToMenu();
+    return;
+  }
   const btn = document.getElementById('btn-confirm');
   btn.disabled    = true;
   btn.textContent = 'Placing order…';

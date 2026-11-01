@@ -532,7 +532,7 @@
         <div class="card-body">
           <h3 style="margin-bottom:6px;font-size:16px">🛎️ Order Taking</h3>
           <div style="font-size:13px;color:var(--muted);margin-bottom:16px">
-            Turning this off deactivates every dish, so customers see an empty menu
+            Turning this off deactivates every dish, so customers see your break image
             and can't place new orders. Turning it back on restores each dish's
             previous active/inactive state — nothing that was already deactivated
             gets accidentally reactivated.
@@ -541,6 +541,12 @@
             <span id="order-taking-badge" class="badge badge-green">🟢 ON</span>
             <button class="btn btn-secondary" id="order-taking-btn" onclick="toggleOrderTaking()">Turn Off</button>
           </div>
+          <div class="form-group" style="margin-top:20px">
+            <label class="form-label" for="closed-store-image-url">Closed-store image link</label>
+            <input class="form-control" type="url" id="closed-store-image-url" placeholder="https://drive.google.com/file/d/…/view">
+            <div style="font-size:12px;color:var(--muted);margin-top:6px">Paste an image or animated GIF link. For Google Drive, use Anyone with the link → Viewer. Shown only while the shop is off. Leave blank to restore the original animation.</div>
+          </div>
+          <button class="btn btn-secondary" id="closed-store-image-save" onclick="saveClosedStoreImage()">Save image link</button>
         </div>
       </div>
       <div class="card" style="max-width:520px">
@@ -1604,7 +1610,9 @@ async function loadOrderTakingStatus() {
   if (!CONFIG.apiUrl) return;
   try {
     const res = await apiGet({ action: 'getOrderTakingStatus' });
-    orderTakingEnabled = res?.enabled !== false;
+    if (!res || res.error) return;
+    document.getElementById('closed-store-image-url').value = res.closedStoreImageUrl || '';
+    orderTakingEnabled = res.enabled !== false;
     renderOrderTakingUI();
   } catch (e) { /* no-op on load */ }
 }
@@ -1621,6 +1629,31 @@ function renderOrderTakingUI() {
     badge.className = 'badge badge-red';
     badge.textContent = '🔴 OFF';
     btn.textContent = 'Turn On';
+  }
+}
+
+async function saveClosedStoreImage() {
+  const input = document.getElementById('closed-store-image-url');
+  const imageUrl = input.value.trim();
+  if (imageUrl && !/^https:\/\/[^\s]+$/i.test(imageUrl)) {
+    showToast('Enter a valid https:// image or Google Drive link.');
+    input.focus();
+    return;
+  }
+  if (!CONFIG.apiUrl) { showToast('API not configured'); return; }
+  const btn = document.getElementById('closed-store-image-save');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const res = await apiPost({ action: 'setClosedStoreImage', token, imageUrl });
+    if (!res?.success) throw new Error(res?.error || 'Image link was not saved. Check the Apps Script deployment.');
+    input.value = res.closedStoreImageUrl || imageUrl;
+    showToast('Closed-store image saved ✓');
+  } catch (e) {
+    showToast('Could not save: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save image link';
   }
 }
 
